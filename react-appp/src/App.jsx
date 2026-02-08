@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import './App.css'
-import Launch from './components/launch.jsx';
+import Launch from './launch.jsx';
 
 function App() {
 
