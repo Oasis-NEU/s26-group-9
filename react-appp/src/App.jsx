@@ -5,7 +5,6 @@ import './App.css'
 import Launch from './components/launch.jsx';
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <div className="App">
