@@ -1,23 +1,20 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import './App.css'
-import Launch from './launch.jsx';
+import Launch from './pages/launch.jsx';
 
 function App() {
-
   return (
-    <div className="App">
-      <BrowserRouter>
+    <BrowserRouter>
+      <div className="App">
         <nav>
-          <Link to="/">Launch</Link> |{' '}
+          <Link to="/">Launch</Link>
         </nav>
-
         <Routes>
-          {/* Define the routes and which element (component) to render */}
           <Route path="/" element={<Launch />} />
         </Routes>
-      </BrowserRouter>
-    </div>
+      </div>
+    </BrowserRouter>
   );
 }
 
-export default App
+export default App;
