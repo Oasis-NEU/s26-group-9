@@ -4,7 +4,7 @@ import './Launch.css';
 function Launch() {
     return (
         <div>
-            <h1>Launch Page</h1>
+            <h1>ProductiviTea!</h1>
             <p>Welcome to the launch page!</p>
             <Button variant="contained" color="success" size="medium">
                 Log-in
