@@ -5,6 +5,9 @@ function Launch() {
     <div>
       <h1>Launch Page</h1>
       <p>Welcome to the launch page!</p>
+      <Button variant="contained" color="success" size = "medium">
+      Log-in 
+      </Button>
     </div>
   );
 }
