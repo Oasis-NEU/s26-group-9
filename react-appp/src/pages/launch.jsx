@@ -1,4 +1,5 @@
 // Launch page 
+import Button from '@mui/material/Button';
 
 function Launch() {
   return (
@@ -8,6 +9,7 @@ function Launch() {
       <Button variant="contained" color="success" size = "medium">
       Log-in 
       </Button>
+      
     </div>
   );
 }
