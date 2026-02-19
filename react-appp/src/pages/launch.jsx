@@ -14,10 +14,20 @@ function Launch() {
             }} size="medium">
                 Log-in
             </Button>
-            <Button variant="outlined" color="error" size="medium">
+            <Button variant="contained" sx={{
+                bgcolor: '#99836F', 
+                '&:hover': {
+                    bgcolor: '#746455', 
+                },
+            }} size="medium">
                 Sign-up
             </Button>
-            <Button color="secondary" size="medium">Let's go!</Button>
+            <Button color="contained" sx={{
+                bgcolor: '#99836F', 
+                '&:hover': {
+                    bgcolor: '#746455', 
+                },
+            }}size="medium">Let's go!</Button>
         </div>
     );
 }
