@@ -17,7 +17,7 @@ function Launch() {
                 outline: 'none',
                 },
                 '&.Mui-focusVisible': {
-                outline: 'black',
+                outline: '000000',
                 },
             }} 
             size="medium">
