@@ -13,9 +13,6 @@ function Launch() {
                     '&:hover': {
                         bgcolor: '#746455', // Custom hover background color
                     },
-                    '&:focus': {
-                        outline: 'none',
-                    },
                     '&.Mui-focusVisible': {
                         outline: '2px #000000',
                     },
