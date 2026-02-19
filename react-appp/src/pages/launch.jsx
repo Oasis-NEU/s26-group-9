@@ -6,7 +6,7 @@ function Launch() {
         <div>
             <h1>ProductiviTea!</h1>
             <p>Welcome to the launch page!</p>
-            <Button variant="contained" color="success" size="medium">
+            <Button variant="contained" sx={{bgcolor: '#99836F'}} size="medium">
                 Log-in
             </Button>
             <Button variant="outlined" color="error" size="medium">
