@@ -4,3 +4,20 @@ body {
     margin: 0;
     padding: 0;
 }
+
+.launch-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    gap: 16px;
+}
+
+h1 {
+    color: #99836F;
+}
+
+p {
+    color: #746455;
+}
