@@ -6,9 +6,6 @@ function App() {
   return (
     <BrowserRouter>
       <div className="App">
-        <nav>
-          <Link to="/">Launch</Link>
-        </nav>
         <Routes>
           <Route path="/" element={<Launch />} />
         </Routes>
