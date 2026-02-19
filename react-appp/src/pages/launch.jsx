@@ -17,7 +17,7 @@ function Launch() {
                         outline: 'none',
                     },
                     '&.Mui-focusVisible': {
-                        outline: '000000',
+                        outline: '2px #000000',
                     },
                 }}
                 size="medium">
@@ -27,7 +27,13 @@ function Launch() {
                 bgcolor: '#99836F',
                 '&:hover': {
                     bgcolor: '#746455',
-                },
+                }, 
+                '&:focus': {
+                        outline: 'none',
+                    },
+                    '&.Mui-focusVisible': {
+                        outline: '2px #000000',
+                    },
             }} size="medium">
                 Sign-up
             </Button>
@@ -36,6 +42,12 @@ function Launch() {
                 '&:hover': {
                     bgcolor: '#746455',
                 },
+                '&:focus': {
+                        outline: 'none',
+                    },
+                    '&.Mui-focusVisible': {
+                        outline: '2px #000000',
+                    },
             }} size="medium">Let's go!</Button>
         </div>
     );
