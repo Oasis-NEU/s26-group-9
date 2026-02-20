@@ -10,6 +10,9 @@ function Launch() {
                 variant="contained"
                 sx={{
                     padding: '10px 20px',
+                    margin: '20px',        
+                    marginTop: '50px',    
+                    marginLeft: '100px',
                     bgcolor: '#99836F', // Custom background color
                     '&:hover': {
                         bgcolor: '#746455', // Custom hover background color
