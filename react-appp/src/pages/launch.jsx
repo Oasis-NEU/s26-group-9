@@ -6,7 +6,7 @@ function Launch() {
         <div className="launch-container">
             <h1>ProductiviTea!</h1>
             <p>Welcome to the launch page!</p>
-            <Button
+            <Button className = "myButtonLogIn"
                 variant="contained"
                 sx={{
                     bgcolor: '#99836F', // Custom background color
@@ -20,8 +20,9 @@ function Launch() {
                 size="medium">
                 Log-in
             </Button>
-            <Button variant="contained" sx={{
-                bgcolor: '#99836F',
+            <Button className = "myButtonSignUp" 
+            variant="contained" sx={{
+            bgcolor: '#99836F',
                 '&:hover': {
                     bgcolor: '#746455',
                 }, 
@@ -34,7 +35,9 @@ function Launch() {
             }} size="medium">
                 Sign-up
             </Button>
-            <Button color="contained" sx={{
+            <Button 
+            className = "myButtonLetsGo"
+            variant="contained" sx={{
                 bgcolor: '#99836F',
                 '&:hover': {
                     bgcolor: '#746455',
