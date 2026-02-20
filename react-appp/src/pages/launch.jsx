@@ -23,7 +23,7 @@ function Launch() {
             </Button>
             <Button className = "myButtonSignUp" 
             variant="contained" sx={{
-            padding: '100px 20px',
+            padding: '10px 20px',
             bgcolor: '#99836F',
                 '&:hover': {
                     bgcolor: '#746455',
