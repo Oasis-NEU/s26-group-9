@@ -1,3 +1,8 @@
+@font-face {
+    font-family: 'Quando';
+    src: url('./assets/fonts/Quando-Regular copy.ttf') format('truetype');
+}
+
 body {
     background-color: #f8f7f6;
     font-family: 'Quando', sans-serif;
