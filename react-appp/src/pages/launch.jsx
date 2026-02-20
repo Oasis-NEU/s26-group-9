@@ -34,7 +34,7 @@ function Launch() {
                     '&.Mui-focusVisible': {
                         outline: '2px #000000',
                     },
-            }} size="medium">
+            }} >
                 Sign-up
             </Button>
             <Button 
