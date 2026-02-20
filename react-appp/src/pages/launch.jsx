@@ -9,6 +9,7 @@ function Launch() {
             <Button className = "myButtonLogIn"
                 variant="contained"
                 sx={{
+                    padding: '100px 20px',
                     bgcolor: '#99836F', // Custom background color
                     '&:hover': {
                         bgcolor: '#746455', // Custom hover background color
@@ -22,6 +23,7 @@ function Launch() {
             </Button>
             <Button className = "myButtonSignUp" 
             variant="contained" sx={{
+            padding: '100px 20px',
             bgcolor: '#99836F',
                 '&:hover': {
                     bgcolor: '#746455',
@@ -38,6 +40,7 @@ function Launch() {
             <Button 
             className = "myButtonLetsGo"
             variant="contained" sx={{
+                padding: '100px 20px',
                 bgcolor: '#99836F',
                 '&:hover': {
                     bgcolor: '#746455',
