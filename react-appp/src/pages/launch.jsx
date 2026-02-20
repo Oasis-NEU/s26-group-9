@@ -6,36 +6,48 @@ function Launch() {
         <div className="launch-container">
             <h1>ProductiviTea!</h1>
             <p>Welcome to the launch page!</p>
-            <Button
+            <Button className = "myButtonLogIn"
                 variant="contained"
                 sx={{
                     bgcolor: '#99836F', // Custom background color
                     '&:hover': {
                         bgcolor: '#746455', // Custom hover background color
                     },
-                    '&:focus': {
-                        outline: 'none',
-                    },
                     '&.Mui-focusVisible': {
-                        outline: '000000',
+                        outline: '2px solid #000000',
                     },
                 }}
                 size="medium">
                 Log-in
             </Button>
-            <Button variant="contained" sx={{
-                bgcolor: '#99836F',
+            <Button className = "myButtonSignUp" 
+            variant="contained" sx={{
+            bgcolor: '#99836F',
                 '&:hover': {
                     bgcolor: '#746455',
-                },
+                }, 
+                '&:focus': {
+                        outline: 'none',
+                    },
+                    '&.Mui-focusVisible': {
+                        outline: '2px #000000',
+                    },
             }} size="medium">
                 Sign-up
             </Button>
-            <Button color="contained" sx={{
+            <Button 
+            className = "myButtonLetsGo"
+            variant="contained" sx={{
                 bgcolor: '#99836F',
                 '&:hover': {
                     bgcolor: '#746455',
                 },
+                '&:focus': {
+                        outline: 'none',
+                    },
+                    '&.Mui-focusVisible': {
+                        outline: '2px #000000',
+                    },
             }} size="medium">Let's go!</Button>
         </div>
     );
