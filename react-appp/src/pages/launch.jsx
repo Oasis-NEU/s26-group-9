@@ -1,15 +1,15 @@
 // Launch page 
 import Button from '@mui/material/Button';
-import logo from '../public/ProductivitTea Logo.png';
 import './Launch.css';
 function Launch() {
     return (
         <div className="launch-container">
-            <div>
-                <img src={logo} alt="ProductiviTea Logo" className="logo" />
+            <div className="navbar">
+                <div className="title-section">
+                    <h1>ProductiviTea!</h1>
+                    <img src="/logo.svg" alt="ProductiviTea Logo" className="logo" />
+                </div>
             </div>
-            <h1>ProductiviTea!</h1>
-            <p>Welcome to the launch page!</p>
             <Button className="myButtonLogIn"
                 variant="contained"
                 sx={{
