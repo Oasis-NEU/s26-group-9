@@ -1,49 +1,48 @@
 // Launch page 
 import Button from '@mui/material/Button';
-import './Launch.css';
+import './launch.css';
 function Launch() {
     return (
         <div className="launch-container">
             <div className="navbar">
                 <div className="title-section">
                     <h1>ProductiviTea!</h1>
-                    <img src="/logo.svg" alt="ProductiviTea Logo" className="logo" />
+                    <img src="/logo.svg" alt="ProductiviTea Logo" className="launch-logo" />
                 </div>
             </div>
-            <Button className="myButtonLogIn"
-                variant="contained"
-                sx={{
-                    padding: '10px 20px',
-                    margin: '20px',
-                    marginBottom: '200px',
-                    marginLeft: '200px',
-                    bgcolor: '#99836F', // Custom background color
-                    '&:hover': {
-                        bgcolor: '#746455', // Custom hover background color
-                    },
-                    '&.Mui-focusVisible': {
-                        outline: '2px solid #000000',
-                    },
-                }}
-                size="medium">
-                Log-in
-            </Button>
-            <Button className="myButtonSignUp"
-                variant="contained" sx={{
-                    padding: '10px 20px',
-                    bgcolor: '#99836F',
-                    '&:hover': {
-                        bgcolor: '#746455',
-                    },
-                    '&:focus': {
-                        outline: 'none',
-                    },
-                    '&.Mui-focusVisible': {
-                        outline: '2px #000000',
-                    },
-                }} >
-                Sign-up
-            </Button>
+            <div className="btn-container">
+                <Button className="myButtonLogIn"
+                    variant="contained"
+                    sx={{
+                        padding: '10px 20px',
+                        bgcolor: '#99836F', // Custom background color
+                        '&:hover': {
+                            bgcolor: '#746455', // Custom hover background color
+                        },
+                        '&.Mui-focusVisible': {
+                            outline: '2px solid #000000',
+                        },
+                    }}
+                    size="medium">
+                    Log-in
+                </Button>
+                <Button className="myButtonSignUp"
+                    variant="contained" sx={{
+                        padding: '10px 20px',
+                        bgcolor: '#99836F',
+                        '&:hover': {
+                            bgcolor: '#746455',
+                        },
+                        '&:focus': {
+                            outline: 'none',
+                        },
+                        '&.Mui-focusVisible': {
+                            outline: '2px #000000',
+                        },
+                    }} >
+                    Sign-up
+                </Button>
+            </div>
             <Button
                 className="myButtonLetsGo"
                 variant="contained" sx={{
