@@ -1,18 +1,22 @@
 // Launch page 
 import Button from '@mui/material/Button';
+import { useNavigate } from 'react-router-dom';
 import './launch.css';
+
 function Launch() {
+    const navigate = useNavigate();
     return (
         <div className="launch-container">
             <div className="navbar">
                 <div className="title-section">
-                    <h1>ProductiviTea!</h1>
+                    <h1 className="title-logo">ProductiviTea!</h1>
                     <img src="/logo.svg" alt="ProductiviTea Logo" className="launch-logo" />
                 </div>
             </div>
             <div className="btn-container">
                 <Button className="myButtonLogIn"
                     variant="contained"
+                    onClick={() => navigate('/login')}
                     sx={{
                         padding: '10px 20px',
                         bgcolor: '#99836F', // Custom background color
@@ -27,7 +31,8 @@ function Launch() {
                     Log-in
                 </Button>
                 <Button className="myButtonSignUp"
-                    variant="contained" sx={{
+                    variant="contained"
+                    sx={{
                         padding: '10px 20px',
                         bgcolor: '#99836F',
                         '&:hover': {
@@ -43,9 +48,10 @@ function Launch() {
                     Sign-up
                 </Button>
             </div>
-            <Button
+            {/* <Button
                 className="myButtonLetsGo"
-                variant="contained" sx={{
+                variant="contained"
+                sx={{
                     padding: '10px 20px',
                     bgcolor: '#99836F',
                     '&:hover': {
@@ -57,7 +63,7 @@ function Launch() {
                     '&.Mui-focusVisible': {
                         outline: '2px #000000',
                     },
-                }} size="medium">Let's go!</Button>
+                }} size="medium">Let's go!</Button> */}
         </div>
     );
 }

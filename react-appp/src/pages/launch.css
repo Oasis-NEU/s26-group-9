@@ -22,8 +22,8 @@ body {
 .navbar {
     position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    left: 1%;
+    transform: translateY(-50%);
 }
 
 .btn-container {
@@ -57,7 +57,12 @@ p {
     height: auto;
 }
 
-.title-section {
+/* .title-logo {
     text-align: left;
     margin-left: 20px;
 }
+
+.launch-logo {
+    text-align: left;
+    margin-left: 10px;
+} */
