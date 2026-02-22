@@ -22,8 +22,12 @@ body {
 .navbar {
     position: absolute;
     top: 50%;
-    left: 1%;
-    transform: translateY(-50%);
+    left: 20%;
+    transform: translateY(-50%); */
+    /* width: 100%;
+    /* align-self: flex-start;
+    margin-right: auto;
+    margin-left: 450px; */
 }
 
 .btn-container {
@@ -43,7 +47,7 @@ body {
 
 h1 {
     color: #99836F;
-    font-size: 4.5rem;
+    font-size: 8rem;
     margin: 0;
 }
 
@@ -55,14 +59,11 @@ p {
     width: 360px;
     max-width: 70vw;
     height: auto;
-}
-
-/* .title-logo {
-    text-align: left;
-    margin-left: 20px;
-}
-
-.launch-logo {
     text-align: left;
     margin-left: 10px;
-} */
+}
+
+.title-logo {
+    text-align: left;
+}
+
