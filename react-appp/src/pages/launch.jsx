@@ -47,14 +47,7 @@ function Launch() {
                 className="myButtonLetsGo"
                 variant="contained" sx={{
                     padding: '10px 20px',
-<<<<<<< HEAD
-                    margin: '20px',        
-                    marginBottom: '200px',    
-                    marginLeft: '500px',
-                    bgcolor: '#99836F', // Custom background color
-=======
                     bgcolor: '#99836F',
->>>>>>> 3212b6163a118442b99cee5a44c3fc39c0115f52
                     '&:hover': {
                         bgcolor: '#746455',
                     },
