@@ -32,6 +32,7 @@ function Launch() {
                 </Button>
                 <Button className="myButtonSignUp"
                     variant="contained"
+                    onClick={() => navigate('/signup')}
                     sx={{
                         padding: '10px 20px',
                         bgcolor: '#99836F',
