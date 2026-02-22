@@ -12,7 +12,7 @@ function Launch() {
                     padding: '10px 20px',
                     margin: '20px',        
                     marginBottom: '200px',    
-                    marginLeft: '200px',
+                    marginLeft: '500px',
                     bgcolor: '#99836F', // Custom background color
                     '&:hover': {
                         bgcolor: '#746455', // Custom hover background color
