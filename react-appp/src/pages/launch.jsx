@@ -1,7 +1,10 @@
 // Launch page 
 import Button from '@mui/material/Button';
+import { useNavigate } from 'react-router-dom';
 import './launch.css';
+
 function Launch() {
+    const navigate = useNavigate();
     return (
         <div className="launch-container">
             <div className="navbar">
@@ -13,6 +16,7 @@ function Launch() {
             <div className="btn-container">
                 <Button className="myButtonLogIn"
                     variant="contained"
+                    onClick={() => navigate('/login')}
                     sx={{
                         padding: '10px 20px',
                         bgcolor: '#99836F', // Custom background color
@@ -27,7 +31,8 @@ function Launch() {
                     Log-in
                 </Button>
                 <Button className="myButtonSignUp"
-                    variant="contained" sx={{
+                    variant="contained"
+                    sx={{
                         padding: '10px 20px',
                         bgcolor: '#99836F',
                         '&:hover': {
@@ -45,7 +50,8 @@ function Launch() {
             </div>
             {/* <Button
                 className="myButtonLetsGo"
-                variant="contained" sx={{
+                variant="contained"
+                sx={{
                     padding: '10px 20px',
                     bgcolor: '#99836F',
                     '&:hover': {
