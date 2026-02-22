@@ -9,7 +9,7 @@ function Launch() {
         <div className="launch-container">
             <div className="navbar">
                 <div className="title-section">
-                    <h1>ProductiviTea!</h1>
+                    <h1 className="title-logo">ProductiviTea!</h1>
                     <img src="/logo.svg" alt="ProductiviTea Logo" className="launch-logo" />
                 </div>
             </div>
