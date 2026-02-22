@@ -5,6 +5,7 @@
         </a>
         <h4 class="text-slate-600 text-base mt-6">Sign up into your account</h4>
       </div>
+<<<<<<< HEAD
 
       <form>
         <div class="grid sm:grid-cols-2 gap-8">
@@ -41,3 +42,8 @@
         </div>
       </form>
     </div>
+=======
+  </div>
+</section>
+{/* test */}
+>>>>>>> dd78abf37d4628abcb2e257c9071169c774cf7c8
