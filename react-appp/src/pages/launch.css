@@ -58,5 +58,6 @@ p {
 }
 
 .title-section {
-    margin-right: 20px;
+    text-align: left;
+    margin-left: 20px;
 }
