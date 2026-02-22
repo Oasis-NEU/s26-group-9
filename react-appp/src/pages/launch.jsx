@@ -48,7 +48,7 @@ function Launch() {
                     Sign-up
                 </Button>
             </div>
-            <Button
+            {/* <Button
                 className="myButtonLetsGo"
                 variant="contained"
                 sx={{
@@ -63,7 +63,7 @@ function Launch() {
                     '&.Mui-focusVisible': {
                         outline: '2px #000000',
                     },
-                }} size="medium">Let's go!</Button>
+                }} size="medium">Let's go!</Button> */}
         </div>
     );
 }
