@@ -56,3 +56,7 @@ p {
     max-width: 70vw;
     height: auto;
 }
+
+.myButtonLetsGo {
+    margin-right: 20px;
+}
