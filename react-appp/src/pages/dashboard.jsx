@@ -11,7 +11,7 @@ export default function Sidebar() {
     <aside style={{ width: 220, height: "100vh", background: "#7f6c42", color: "#fff", display: "flex", flexDirection: "column", fontFamily: "Arial, Helvetica, sans-serif" }}>
       
       <div style={{ padding: "24px 20px", fontSize: 18, fontWeight: 700, borderBottom: "1px solid #2e3d52" }}>
-        MyApp
+        ProductiviTea
       </div>
 
       <nav style={{ flex: 1, padding: "16px 0" }}>
