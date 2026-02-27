@@ -9,7 +9,6 @@ export default function Login() {
         <>
             <div className="login-container">
                 <div className="login-header">
-                    {/* Replace src with your logo */}
                     <img
                         alt="Oasis"
                         src="/logo.svg"

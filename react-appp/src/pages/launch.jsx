@@ -12,6 +12,27 @@ function Launch() {
                     <h1 className="title-logo">ProductiviTea!</h1>
                     <img src="/logo.svg" alt="ProductiviTea Logo" className="launch-logo" />
                 </div>
+                <Button
+                    className="myButtonLetsGo"
+                    variant="contained"
+                    onClick={() => navigate('/dashboard')}
+                    sx={{
+                        padding: '10px 20px',
+                        bgcolor: '#99836F',
+                        '&:hover': {
+                            bgcolor: '#746455',
+                        },
+                        '&:focus': {
+                            outline: 'none',
+                        },
+                        '&.Mui-focusVisible': {
+                            outline: '2px #000000',
+                        },
+                    }}
+                    size="medium"
+                >
+                    Let's go!
+                </Button>
             </div>
             <div className="btn-container">
                 <Button className="myButtonLogIn"
@@ -49,22 +70,6 @@ function Launch() {
                     Sign-up
                 </Button>
             </div>
-            {/* <Button
-                className="myButtonLetsGo"
-                variant="contained"
-                sx={{
-                    padding: '10px 20px',
-                    bgcolor: '#99836F',
-                    '&:hover': {
-                        bgcolor: '#746455',
-                    },
-                    '&:focus': {
-                        outline: 'none',
-                    },
-                    '&.Mui-focusVisible': {
-                        outline: '2px #000000',
-                    },
-                }} size="medium">Let's go!</Button> */}
         </div>
     );
 }

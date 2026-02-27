@@ -23,7 +23,11 @@ body {
     position: absolute;
     top: 50%;
     left: 20px;
-    transform: translateY(-50%); 
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
     /* width: 100%;
     /* align-self: flex-start;
     margin-right: auto;
@@ -66,4 +70,3 @@ p {
 .title-logo {
     text-align: left;
 }
-
