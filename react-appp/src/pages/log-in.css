@@ -13,7 +13,6 @@ body {
 
 .login-container {
     display: flex;
-    min-height: 100vh;
     flex-direction: column;
     justify-content: center;
     padding: 4rem 1.5rem;
@@ -70,6 +69,35 @@ body {
 
 .login-input-wrapper {
     margin-top: 0.5rem;
+    position: relative;
+}
+
+.password-input-wrapper {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0rem;
+    top: 55%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #746455;
+}
+
+.password-toggle:hover {
+    color: #99836F;
+}
+
+.password-icon {
+    width: 1.25rem;
+    height: 1.25rem;
 }
 
 .login-input {
@@ -79,6 +107,7 @@ body {
     background-color: white;
     padding: 0.5rem 0.75rem;
     font-size: 1rem;
+    font-family: 'Quando', serif;
     color: #746455;
     outline: 1px solid #d1d5db;
     outline-offset: -1px;
