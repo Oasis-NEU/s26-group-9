@@ -69,6 +69,24 @@ function Launch() {
                     }} >
                     Sign-up
                 </Button>
+                <Button className="myButtonProductivitea"
+                    variant="contained"
+                    onClick={() => navigate('/signup')}
+                    sx={{
+                        padding: '10px 20px',
+                        bgcolor: '#99836F',
+                        '&:hover': {
+                            bgcolor: '#746455',
+                        },
+                        '&:focus': {
+                            outline: 'none',
+                        },
+                        '&.Mui-focusVisible': {
+                            outline: '2px #000000',
+                        },
+                    }} >
+                    Sign-up
+                </Button>
             </div>
         </div>
     );
