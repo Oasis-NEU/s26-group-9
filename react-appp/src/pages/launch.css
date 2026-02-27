@@ -70,3 +70,9 @@ p {
 .title-logo {
     text-align: left;
 }
+
+.myButtonProductivitea {
+  position: fixed;
+  left: 20px;
+  top: 20px; /* change to bottom: 20px for lower-left */
+}
