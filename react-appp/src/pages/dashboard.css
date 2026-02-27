@@ -1,6 +1,114 @@
-.productivity-button {
+.dashboard-page {
+    min-height: 100vh;
+    display: flex;
+    background-color: #f8f7f6;
+    color: #746455;
+    position: relative;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+}
+
+.dashboard-productivity-button {
     position: absolute;
     top: 20px;
-    left: 20px;
-    z-index: 10;
+    right: 0;
+    z-index: 20;
+}
+
+.dashboard-home-link {
+    display: inline-block;
+    line-height: 0;
+    border-radius: 6px;
+}
+
+.dashboard-home-link:focus-visible {
+    outline: 2px solid #99836F;
+    outline-offset: 2px;
+}
+
+.dashboard-home-logo {
+    width: 90px;
+    height: auto;
+    display: block;
+}
+
+.dashboard-home-link:hover .dashboard-home-logo {
+    opacity: 0.9;
+}
+
+.dashboard-sidebar {
+    width: 220px;
+    background-color: #99836F;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #8a7664;
+}
+
+.dashboard-brand {
+    padding: 24px 20px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    border-bottom: 1px solid #8a7664;
+}
+
+.dashboard-nav {
+    display: flex;
+    flex-direction: column;
+    padding-top: 16px;
+    gap: 4px;
+}
+
+.dashboard-nav-item {
+    font-family: inherit;
+    text-align: left;
+    padding: 12px 20px;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    color: #ffffff;
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease, border-left-color 0.2s ease;
+}
+
+.dashboard-nav-item:hover {
+    background-color: #8a7664;
+}
+
+.dashboard-nav-item.active {
+    background-color: #746455;
+    border-left-color: #f8f7f6;
+    font-weight: 600;
+}
+
+.dashboard-content {
+    flex: 1;
+    padding: 40px;
+}
+
+.dashboard-title {
+    margin: 0;
+    font-size: 2rem;
+    color: #99836F;
+}
+
+.dashboard-text {
+    margin-top: 12px;
+    font-size: 1rem;
+    color: #746455;
+}
+
+@media (max-width: 768px) {
+    .dashboard-page {
+        flex-direction: column;
+    }
+
+    .dashboard-sidebar {
+        width: 100%;
+    }
+
+    .dashboard-content {
+        padding: 24px;
+    }
 }
