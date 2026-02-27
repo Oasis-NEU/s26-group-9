@@ -1,10 +1,24 @@
-import { Link } from 'react-router-dom';
 import './signup.css';
+import Button from '@mui/material/Button';
+import { Link } from 'react-router-dom';
 
 export default function Signup() {
     return (
         <>
             <div className="signup-container">
+                <div className="productivity-button">
+                    <Button
+                        component={Link}
+                        to="/"
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                        <img
+                            src="/logo.svg"
+                            alt="descriptive text"
+                            style={{ width: '90px', height: 'auto', display: 'block' }}
+                        />
+                    </Button>
+                </div>
                 <div className="signup-header">
                     <img
                         src="/logo.svg"

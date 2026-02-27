@@ -1,5 +1,6 @@
 import { useState } from "react";
-
+import { Link } from 'react-router-dom';
+import Button from '@mui/material/Button';
 const navItems = ["Dashboard", "Friends", "Settings"];
 
 export default function Dashboard() {
@@ -7,7 +8,19 @@ export default function Dashboard() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      
+      <div className="productivity-button">
+                    <Button
+                        component={Link}
+                        to="/"
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                        <img
+                            src="/logo.svg"
+                            alt="descriptive text"
+                            style={{ width: '90px', height: 'auto', display: 'block' }}
+                        />
+                    </Button>
+                </div>
       {/* Sidebar */}
       <aside
         style={{

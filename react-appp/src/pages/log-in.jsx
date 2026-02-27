@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import './log-in.css';
+import Button from '@mui/material/Button';
 
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
@@ -8,6 +9,19 @@ export default function Login() {
     return (
         <>
             <div className="login-container">
+                <div className="productivity-button">
+                    <Button
+                        component={Link}
+                        to="/"
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                        <img
+                            src="/logo.svg"
+                            alt="descriptive text"
+                            style={{ width: '90px', height: 'auto', display: 'block' }}
+                        />
+                    </Button>
+                </div>
                 <div className="login-header">
                     <img
                         alt="Oasis"

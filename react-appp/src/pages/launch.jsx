@@ -5,6 +5,11 @@ import './launch.css';
 
 function Launch() {
     const navigate = useNavigate();
+    const handleProductivityClick = () => {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        navigate(isLoggedIn ? '/' : '/dashboard');
+    };
+
     return (
         <div className="launch-container">
             <div className="navbar">
@@ -69,23 +74,17 @@ function Launch() {
                     }} >
                     Sign-up
                 </Button>
-                <Button className="myButtonProductivitea"
-                    variant="contained"
-                    onClick={() => navigate('/signup')}
-                    sx={{
-                        padding: '10px 20px',
-                        bgcolor: '#99836F',
-                        '&:hover': {
-                            bgcolor: '#746455',
-                        },
-                        '&:focus': {
-                            outline: 'none',
-                        },
-                        '&.Mui-focusVisible': {
-                            outline: '2px #000000',
-                        },
-                    }} >
-                    Sign-up
+            </div>
+            <div className="productivity-button">
+                <Button
+                    onClick={() => navigate('/')}
+                    style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                <img
+                    src="/logo.svg"
+                    alt="descriptive text"
+                    style={{ width: '90px', height: 'auto', display: 'block' }}
+                />
                 </Button>
             </div>
         </div>
