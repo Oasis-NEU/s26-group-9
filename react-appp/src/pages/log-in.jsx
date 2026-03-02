@@ -29,7 +29,7 @@ export default function Login() {
                         className="login-logo"
                     />
                     <h2 className="login-title">
-                        Sign in to your account
+                        Log In
                     </h2>
                 </div>
 
@@ -37,7 +37,7 @@ export default function Login() {
                     <form action="#" method="POST" className="login-form">
                         <div>
                             <label htmlFor="email" className="login-label">
-                                Email address
+                                Email Address
                             </label>
                             <div className="login-input-wrapper">
                                 <input
@@ -47,6 +47,7 @@ export default function Login() {
                                     required
                                     autoComplete="email"
                                     className="login-input"
+                                    placeholder='Enter email'
                                 />
                             </div>
                         </div>
@@ -56,11 +57,6 @@ export default function Login() {
                                 <label htmlFor="password" className="login-label">
                                     Password
                                 </label>
-                                <div className="forgot-password-wrapper">
-                                    <a href="#" className="forgot-password-link">
-                                        Forgot password?
-                                    </a>
-                                </div>
                             </div>
                             <div className="login-input-wrapper password-input-wrapper">
                                 <input
@@ -70,6 +66,7 @@ export default function Login() {
                                     required
                                     autoComplete="current-password"
                                     className="login-input"
+                                    placeholder='Enter password'
                                 />
                                 <button
                                     type="button"
@@ -88,6 +85,11 @@ export default function Login() {
                                     )}
                                 </button>
                             </div>
+                            <div className="forgot-password-wrapper">
+                                <a href="#" className="forgot-password-link">
+                                    Forgot Password?
+                                </a>
+                            </div>
                         </div>
 
                         <div>
@@ -95,7 +97,7 @@ export default function Login() {
                                 type="submit"
                                 className="login-submit-button"
                             >
-                                Sign in
+                                Log In
                             </button>
                         </div>
                     </form>
