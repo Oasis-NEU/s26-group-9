@@ -29,9 +29,12 @@
 }
 
 .signup-title {
-    color: #4b5563;
-    font-size: 1rem;
-    margin-top: 1.5rem;
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    letter-spacing: -0.025em;
+    color: #746455;
 }
 
 .signup-form {
@@ -61,12 +64,11 @@
 }
 
 .signup-label {
-    color: #111827;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    text-align: center;
     display: block;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #746455;
+    text-align: center;
 }
 
 .signup-input-wrapper {
@@ -83,16 +85,28 @@
 }
 
 .signup-input {
-    background-color: #f3f4f6;
+    display: block;
     width: 100%;
-    max-width: 22rem;
-    color: #111827;
-    font-size: 0.875rem;
-    padding: 0.75rem 1rem;
     border-radius: 0.375rem;
-    border: 1px solid #99836F;
-    transition: border-color 200ms, box-shadow 200ms;
-    font-family: inherit;
+    background-color: white;
+    padding: 0.5rem 0.75rem;
+    padding-right: 2.5rem;
+    font-size: 1rem;
+    font-family: 'Quando', serif;
+    color: #746455;
+    outline: 1px solid #d1d5db;
+    outline-offset: -1px;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 18rem;
+    max-width: 24rem;
+    margin: 0 auto;
+}
+
+.signup-input::placeholder {
+    color: #9ca3af;
+    font-family: 'Quando', serif;
+    font-size: 0.8rem;
 }
 
 .password-input-wrapper .signup-input {
@@ -102,7 +116,7 @@
 
 .signup-input:focus {
     background-color: transparent;
-    outline: 2px solid #99836F;
+    outline: 1px solid #99836F;
     outline-offset: -1px;
 }
 
@@ -136,17 +150,20 @@
 }
 
 .signup-button {
-    min-width: 8rem;
+    display: flex;
+    max-width: 8rem;
+    width: 100%;
+    justify-content: center;
+    border-radius: 0.375rem;
+    background-color: #99836F;
     padding: 0.75rem 1.5rem;
     font-size: 0.875rem;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    border-radius: 0.375rem;
+    font-weight: 600;
     color: white;
-    background-color: #99836F;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: background-color 200ms;
     border: none;
     cursor: pointer;
-    transition: background-color 200ms;
 }
 
 .signup-button:hover {

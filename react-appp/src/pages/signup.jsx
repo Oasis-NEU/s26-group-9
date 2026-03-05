@@ -29,7 +29,7 @@ export default function Signup() {
                         alt="logo"
                         className="signup-logo"
                     />
-                    <h4 className="signup-title">Sign up into your account</h4>
+                    <h2 className="signup-title">Create an Account</h2>
                 </div>
 
                 <form className="signup-form">
@@ -40,7 +40,7 @@ export default function Signup() {
                                 name="name"
                                 type="text"
                                 className="signup-input"
-                                placeholder="Enter name"
+                                placeholder="Enter first name"
                             />
                         </div>
                         <div>
@@ -53,7 +53,7 @@ export default function Signup() {
                             />
                         </div>
                         <div>
-                            <label className="signup-label">Email Id</label>
+                            <label className="signup-label">Email Address</label>
                             <input
                                 name="email"
                                 type="text"
@@ -62,12 +62,12 @@ export default function Signup() {
                             />
                         </div>
                         <div>
-                            <label className="signup-label">Mobile No.</label>
+                            <label className="signup-label">Phone Number</label>
                             <input
                                 name="number"
                                 type="number"
                                 className="signup-input"
-                                placeholder="Enter mobile number"
+                                placeholder="Enter phone number"
                             />
                         </div>
                         <div>
@@ -130,7 +130,7 @@ export default function Signup() {
 
                     <div className="signup-button-wrapper">
                         <button type="submit" className="signup-button">
-                            Sign up
+                            Sign Up
                         </button>
                     </div>
                 </form>
@@ -138,7 +138,7 @@ export default function Signup() {
                 <p className="signup-login-prompt">
                     Already have an account?{' '}
                     <Link to="/login" className="signup-login-link">
-                        Log in
+                        Log In
                     </Link>
                 </p>
             </div>
