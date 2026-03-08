@@ -91,7 +91,7 @@ body {
 .login-form .password-toggle {
     position: absolute;
     top: 50%;
-    right: -2.5rem;
+    right: 0.4rem;
     transform: translateY(-50%);
     background: none;
     border: none;
@@ -157,7 +157,7 @@ body {
 
 .password-header .login-label {
     margin: 0;
-    text-align: left;
+    text-align: center;
 }
 
 .forgot-password-wrapper {
