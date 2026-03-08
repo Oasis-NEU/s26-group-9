@@ -65,7 +65,9 @@ export default function Signup() {
                             <label className="signup-label">Phone Number</label>
                             <input
                                 name="number"
-                                type="number"
+                                type="tel"
+                                inputMode="numeric"
+                                autoComplete="tel"
                                 className="signup-input"
                                 placeholder="Enter phone number"
                             />
