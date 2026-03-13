@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Link } from 'react-router-dom';
 import './dashboard.css';
 
-const navItems = ["Dashboard", "Friends", "Settings"];
+const navItems = ["My Tasks", "Friends", "Settings"];
 
 export default function Dashboard() {
-  const [active, setActive] = useState("Dashboard");
+  const [active, setActive] = useState("My Tasks");
 
   return (
     <div className="dashboard-page">
@@ -42,6 +42,13 @@ export default function Dashboard() {
         <h1 className="dashboard-title">{active}</h1>
         <p className="dashboard-text">Welcome to your {active} page.</p>
       </main>
+
+      <aside className="dashboard-right-sidebar">
+        <div className="dashboard-right-title">Activity Chart</div>
+        <div className="dashboard-graph-container">
+          {/* your graph goes here */}
+        </div>
+      </aside>
     </div>
   );
 }

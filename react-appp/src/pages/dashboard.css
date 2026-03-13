@@ -112,3 +112,19 @@
         padding: 24px;
     }
 }
+
+.dashboard-right-sidebar {
+    width: 220px;
+    background-color: #99836F;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #8a7664;
+}
+
+.dashboard-right-title {
+    padding: 24px 20px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    border-bottom: 1px solid #8a7664;
+}
