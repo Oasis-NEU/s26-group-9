@@ -9,7 +9,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <div className="dashboard-productivity-button">
+      {/* <div className="dashboard-productivity-button">
         <Link to="/" className="dashboard-home-link" aria-label="Go to launch page">
           <img
             src="/logo.svg"
@@ -17,12 +17,17 @@ export default function Dashboard() {
             className="dashboard-home-logo"
           />
         </Link>
-      </div>
+      </div> */}
 
       <aside className="dashboard-sidebar">
+        
+        
         <div className="dashboard-brand">
+          <Link to="/" className="dashboard-home-link" aria-label="Go to launch page">
           ProductiviTea
+          </Link>
         </div>
+        
 
         <nav className="dashboard-nav">
           {navItems.map((item) => (

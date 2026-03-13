@@ -8,12 +8,12 @@
     margin-left: calc(50% - 50vw);
 }
 
-.dashboard-productivity-button {
+/* .dashboard-productivity-button {
     position: absolute;
     top: 20px;
     right: 0;
     z-index: 20;
-}
+} */
 
 .dashboard-home-link {
     display: inline-block;
