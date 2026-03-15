@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from 'react-router-dom';
+import TaskDashboard from "./taskdashboard";
 import './dashboard.css';
 
 const navItems = ["My Tasks", "Friends", "Settings"];
@@ -33,8 +34,14 @@ export default function Dashboard() {
       </aside>
 
       <main className="dashboard-content">
-        <h1 className="dashboard-title">{active}</h1>
-        <p className="dashboard-text">Welcome to your {active} page.</p>
+        {active === "My Tasks" ? (
+          <TaskDashboard />
+        ) : (
+          <>
+            <h1 className="dashboard-title">{active}</h1>
+            <p className="dashboard-text">Welcome to your {active} page.</p>
+          </>
+        )}
       </main>
 
       <aside className="dashboard-right-sidebar">
