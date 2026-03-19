@@ -47,7 +47,7 @@ export default function Dashboard() {
       <aside className="dashboard-right-sidebar">
         <div className="dashboard-right-title">Activity Chart</div>
         <div className="dashboard-graph-container">
-          {/* your graph goes here */}
+          {}
         </div>
       </aside>
     </div>

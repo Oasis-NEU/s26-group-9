@@ -2,10 +2,47 @@ import { useState } from 'react';
 import './signup.css';
 import Button from '@mui/material/Button';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export default function Signup() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [formError, setFormError] = useState('');
+    const [formSuccess, setFormSuccess] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    async function handleSubmit(event) {
+        event.preventDefault();
+        setFormError('');
+        setFormSuccess('');
+
+        const formData = new FormData(event.currentTarget);
+        const email = formData.get('email')?.toString().trim();
+        const password = formData.get('password')?.toString() || '';
+        const confirmPassword = formData.get('confirmPassword')?.toString() || '';
+
+        if (!email || !password || !confirmPassword) {
+            setFormError('Please fill in email and password fields.');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setFormError('Passwords do not match.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        const { error } = await supabase.auth.signUp({ email, password });
+        setIsSubmitting(false);
+
+        if (error) {
+            setFormError(error.message);
+            return;
+        }
+
+        setFormSuccess('Account created. Check your email to verify your account.');
+        event.currentTarget.reset();
+    }
 
     return (
         <>
@@ -32,7 +69,7 @@ export default function Signup() {
                     <h2 className="signup-title">Create an Account</h2>
                 </div>
 
-                <form className="signup-form">
+                <form className="signup-form" onSubmit={handleSubmit}>
                     <div className="signup-form-grid">
                         <div>
                             <label className="signup-label">First Name</label>
@@ -131,11 +168,14 @@ export default function Signup() {
                     </div>
 
                     <div className="signup-button-wrapper">
-                        <button type="submit" className="signup-button">
+                        <button type="submit" className="signup-button" disabled={isSubmitting}>
                             Sign Up
                         </button>
                     </div>
                 </form>
+
+                {formError && <p className="signup-error">{formError}</p>}
+                {formSuccess && <p className="signup-success">{formSuccess}</p>}
 
                 <p className="signup-login-prompt">
                     Already have an account?{' '}
@@ -145,6 +185,6 @@ export default function Signup() {
                 </p>
             </div>
         </>
-    );
+    )
 }
 
