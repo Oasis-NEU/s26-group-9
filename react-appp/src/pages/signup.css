@@ -120,6 +120,16 @@
     outline-offset: -1px;
 }
 
+.signup-input:-webkit-autofill,
+.signup-input:-webkit-autofill:hover,
+.signup-input:-webkit-autofill:focus,
+.signup-input:-webkit-autofill:active {
+    -webkit-text-fill-color: #746455;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+    box-shadow: 0 0 0 1000px #ffffff inset;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 .password-toggle {
     position: absolute;
     top: 50%;

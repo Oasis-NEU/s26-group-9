@@ -1,10 +1,44 @@
-import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import './log-in.css';
 import Button from '@mui/material/Button';
 
 export default function Login() {
+    const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formError, setFormError] = useState('');
+
+    async function handleSubmit(event) {
+        event.preventDefault();
+        setFormError('');
+
+        const formData = new FormData(event.currentTarget);
+        const trimmedEmail = formData.get('email')?.toString().trim() || '';
+        const submittedPassword = formData.get('password')?.toString() || '';
+
+        if (!trimmedEmail || !submittedPassword) {
+            setFormError('Please enter both email and password.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        const { error } = await supabase.auth.signInWithPassword({
+            email: trimmedEmail,
+            password: submittedPassword,
+        });
+        setIsSubmitting(false);
+
+        if (error) {
+            localStorage.removeItem('isLoggedIn');
+            setFormError(error.message);
+            return;
+        }
+
+        localStorage.setItem('isLoggedIn', 'true');
+        navigate('/dashboard');
+    }
 
     return (
         <>
@@ -34,7 +68,7 @@ export default function Login() {
                 </div>
 
                 <div className="login-form-container">
-                    <form action="#" method="POST" className="login-form">
+                    <form className="login-form" onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="email" className="login-label">
                                 Email Address
@@ -96,11 +130,14 @@ export default function Login() {
                             <button
                                 type="submit"
                                 className="login-submit-button"
+                                disabled={isSubmitting}
                             >
-                                Log In
+                                {isSubmitting ? 'Logging In...' : 'Log In'}
                             </button>
                         </div>
                     </form>
+
+                    {formError && <p className="login-error">{formError}</p>}
 
                     <p className="signup-prompt">
                         Not a member?{' '}

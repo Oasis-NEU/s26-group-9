@@ -7,7 +7,7 @@ function Launch() {
     const navigate = useNavigate();
     const handleProductivityClick = () => {
         const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-        navigate(isLoggedIn ? '/' : '/dashboard');
+        navigate(isLoggedIn ? '/dashboard' : '/login');
     };
 
     return (
@@ -20,7 +20,7 @@ function Launch() {
                 <Button
                     className="myButtonLetsGo"
                     variant="contained"
-                    onClick={() => navigate('/dashboard')}
+                    onClick={handleProductivityClick}
                     sx={{
                         padding: '10px 20px',
                         bgcolor: '#99836F',
@@ -80,11 +80,11 @@ function Launch() {
                     onClick={() => navigate('/')}
                     style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
                 >
-                <img
-                    src="/logo.svg"
-                    alt="descriptive text"
-                    style={{ width: '90px', height: 'auto', display: 'block' }}
-                />
+                    <img
+                        src="/logo.svg"
+                        alt="descriptive text"
+                        style={{ width: '90px', height: 'auto', display: 'block' }}
+                    />
                 </Button>
             </div>
         </div>

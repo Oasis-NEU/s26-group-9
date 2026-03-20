@@ -1,0 +1,76 @@
+.activity-panel {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.activity-panel__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.01em;
+}
+
+.activity-panel__chart {
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    margin: 0 auto;
+    border: 1px solid #8a7664;
+    position: relative;
+}
+
+.activity-panel__chart::after {
+    content: '';
+    position: absolute;
+    inset: 24px;
+    border-radius: 50%;
+    background: #99836F;
+    border: 1px solid #8a7664;
+}
+
+.activity-panel__legend {
+    margin: 0;
+    padding: 2px 0 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.activity-panel__legend-item {
+    display: grid;
+    grid-template-columns: 14px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    color: #f8f7f6;
+    font-size: 0.84rem;
+}
+
+.activity-panel__swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background: #f8f7f6;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.activity-panel__label {
+    opacity: 0.95;
+}
+
+.activity-panel__value {
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+.activity-panel__empty {
+    color: #f8f7f6;
+    opacity: 0.85;
+    font-size: 0.84rem;
+}
