@@ -92,7 +92,7 @@
     padding: 0.5rem 0.75rem;
     padding-right: 2.5rem;
     font-size: 1rem;
-    font-family: 'Quando', serif;
+    font-family: 'Afacad', sans-serif;
     color: #746455;
     outline: 1px solid #d1d5db;
     outline-offset: -1px;
@@ -105,7 +105,7 @@
 
 .signup-input::placeholder {
     color: #9ca3af;
-    font-family: 'Quando', serif;
+    font-family: 'Afacad', sans-serif;
     font-size: 0.8rem;
 }
 
