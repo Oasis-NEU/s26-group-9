@@ -119,6 +119,9 @@
     color: #ffffff;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 12px;
     border-right: 1px solid #8a7664;
 }
 
