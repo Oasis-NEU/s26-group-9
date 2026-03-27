@@ -75,7 +75,7 @@ export default function Dashboard() {
       </main>
 
       <aside className="dashboard-right-sidebar">
-        <ActivityPanel activity={activity} title="Time Spent Activity" />
+        <ActivityPanel activity={activity} sessions={sessions} tasks={tasks} title="Time Spent Activity" />
       </aside>
     </div>
     </div>

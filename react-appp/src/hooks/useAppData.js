@@ -4,7 +4,18 @@ import { supabase } from '../lib/supabase';
 const activityColors = ['#DCC9AE', '#BFA88D', '#8A7664', '#746455'];
 
 function isMissingTableError(error) {
-    return error?.code === '42P01';
+    const code = String(error?.code || '');
+    const message = String(error?.message || '').toLowerCase();
+    return (
+        code === '42P01' ||
+        code === 'PGRST205' ||
+        message.includes('could not find the table') ||
+        message.includes('relation') && message.includes('does not exist')
+    );
+}
+
+function isMissingColumnError(error) {
+    return error?.code === '42703';
 }
 
 async function queryWithFallback(primaryQuery, fallbackQuery) {
@@ -14,6 +25,69 @@ async function queryWithFallback(primaryQuery, fallbackQuery) {
     }
 
     return fallbackQuery();
+}
+
+async function fetchRowsByUser({ tableName, userId, userColumns, orderBy = 'created_at' }) {
+    let lastError = null;
+
+    async function queryByColumn(column) {
+        const ordered = await supabase
+            .from(tableName)
+            .select('*')
+            .eq(column, userId)
+            .order(orderBy, { ascending: false });
+
+        if (!ordered.error) {
+            return ordered;
+        }
+
+        // Some tables do not have created_at; retry without ordering.
+        if (isMissingColumnError(ordered.error) && String(ordered.error.message || '').includes(`.${orderBy}`)) {
+            return supabase.from(tableName).select('*').eq(column, userId);
+        }
+
+        return ordered;
+    }
+
+    for (const column of userColumns) {
+        const result = await queryByColumn(column);
+
+        if (!result.error) {
+            return result;
+        }
+
+        if (isMissingColumnError(result.error)) {
+            lastError = result.error;
+            continue;
+        }
+
+        return result;
+    }
+
+    let unfilteredResult = await supabase
+        .from(tableName)
+        .select('*')
+        .order(orderBy, { ascending: false });
+
+    if (unfilteredResult.error && isMissingColumnError(unfilteredResult.error) && String(unfilteredResult.error.message || '').includes(`.${orderBy}`)) {
+        unfilteredResult = await supabase.from(tableName).select('*');
+    }
+
+    // If this succeeds, treat it as a valid empty-or-filled response rather than surfacing
+    // a synthetic "missing column" error from earlier fallback probes.
+    if (!unfilteredResult.error) {
+        return unfilteredResult;
+    }
+
+    // Probe-only missing-column errors should not block rendering.
+    if (isMissingColumnError(unfilteredResult.error)) {
+        return { data: [], error: null };
+    }
+
+    return {
+        data: [],
+        error: unfilteredResult.error || lastError,
+    };
 }
 
 export default function useAppData() {
@@ -64,16 +138,34 @@ export default function useAppData() {
                 () => supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
                 () => supabase.from('users').select('*').eq('id', userId).maybeSingle()
             ),
-            supabase.from('tasks').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-            supabase.from('subtasks').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+            fetchRowsByUser({
+                tableName: 'tasks',
+                userId,
+                userColumns: ['user_id', 'userId', 'owner_id', 'created_by'],
+            }),
+            fetchRowsByUser({
+                tableName: 'subtasks',
+                userId,
+                userColumns: ['user_id', 'userId', 'owner_id', 'created_by'],
+            }),
             queryWithFallback(
-                () => supabase.from('sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-                () => supabase.from('study_sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+                () => fetchRowsByUser({
+                    tableName: 'sessions',
+                    userId,
+                    userColumns: ['user_id', 'userId', 'owner_id', 'created_by'],
+                }),
+                () => fetchRowsByUser({
+                    tableName: 'study_sessions',
+                    userId,
+                    userColumns: ['user_id', 'userId', 'owner_id', 'created_by'],
+                })
             ),
             supabase.from('friendships').select('*').or(`user_id.eq.${userId},friend_id.eq.${userId}`),
         ]);
 
-        const blockingErrors = [tasksResult.error, friendshipsResult.error].filter(Boolean);
+        const blockingErrors = [tasksResult.error, friendshipsResult.error]
+            .filter(Boolean)
+            .filter((e) => !isMissingColumnError(e));
         if (blockingErrors.length > 0) {
             setError(blockingErrors[0].message);
         }
@@ -82,11 +174,11 @@ export default function useAppData() {
             setError(profileResult.error.message);
         }
 
-        if (sessionsResult.error && !isMissingTableError(sessionsResult.error)) {
+        if (sessionsResult.error && !isMissingTableError(sessionsResult.error) && !isMissingColumnError(sessionsResult.error)) {
             setError(sessionsResult.error.message);
         }
 
-        if (subtasksResult.error && !isMissingTableError(subtasksResult.error)) {
+        if (subtasksResult.error && !isMissingTableError(subtasksResult.error) && !isMissingColumnError(subtasksResult.error)) {
             setError(subtasksResult.error.message);
         }
 

@@ -20,23 +20,54 @@
     width: 100%;
 }
 
-.activity-panel__chart {
-    width: 112px;
-    height: 112px;
-    align-items: center;
-    border-radius: 50%;
-    margin: 0 auto;
-    border: 1px solid #8a7664;
-    position: relative;
+.activity-panel__grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
 }
 
-.activity-panel__chart::after {
-    content: '';
-    position: absolute;
-    inset: 24px;
+.activity-panel__card {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.activity-panel__card--score {
+    display: grid;
+    place-items: center;
+}
+
+.activity-panel__section-title {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+    color: #f8f7f6;
+}
+
+.activity-panel__chart-wrap {
+    width: 100%;
+    height: 180px;
+}
+
+.activity-panel__score-ring {
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
-    background: #99836F;
-    border: 1px solid #8a7664;
+    display: grid;
+    place-items: center;
+}
+
+.activity-panel__score-inner {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #99836f;
+    color: #ffffff;
+    font-weight: 700;
 }
 
 .activity-panel__legend {
@@ -49,20 +80,12 @@
 }
 
 .activity-panel__legend-item {
-    display: grid;
-    grid-template-columns: 14px 1fr auto;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 8px;
     color: #f8f7f6;
     font-size: 0.84rem;
-}
-
-.activity-panel__swatch {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-    background: #f8f7f6;
-    border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .activity-panel__label {
@@ -78,4 +101,34 @@
     color: #f8f7f6;
     opacity: 0.85;
     font-size: 0.84rem;
+}
+
+.activity-panel__list {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.activity-panel__item {
+    color: #f8f7f6;
+    font-size: 0.84rem;
+}
+
+.activity-panel__streak-dots {
+    margin-top: 10px;
+    display: flex;
+    gap: 6px;
+}
+
+.activity-panel__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #746455;
+}
+
+.activity-panel__dot.is-active {
+    background: #dcc9ae;
 }
