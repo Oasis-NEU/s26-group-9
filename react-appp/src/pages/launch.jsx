@@ -1,12 +1,14 @@
 // Launch page 
 import Button from '@mui/material/Button';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import './launch.css';
 
 function Launch() {
     const navigate = useNavigate();
-    const handleProductivityClick = () => {
-        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const handleProductivityClick = async () => {
+        const { data, error } = await supabase.auth.getUser();
+        const isLoggedIn = !error && !!data?.user;
         navigate(isLoggedIn ? '/dashboard' : '/login');
     };
 

@@ -21,6 +21,7 @@
 
 .task-detail__title {
     margin: 0;
+    text-align: center;
     font-size: 2rem;
     color: #99836F;
 }
