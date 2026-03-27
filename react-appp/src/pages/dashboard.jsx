@@ -9,7 +9,7 @@ const navItems = ["My Tasks", "Friends", "Settings"];
 
 export default function Dashboard() {
   const [active, setActive] = useState("My Tasks");
-  const { tasks, activity, addTask, isLoading, error } = useAppData();
+  const { tasks, sessions, activity, addTask, isLoading, error } = useAppData();
 
   return (
     <div className="dashboard-page">
@@ -48,7 +48,7 @@ export default function Dashboard() {
       </main>
 
       <aside className="dashboard-right-sidebar">
-        <ActivityPanel activity={activity} title="Time Spent Activity" />
+        <ActivityPanel activity={activity} sessions={sessions} tasks={tasks} title="Time Spent Activity" />
       </aside>
     </div>
   );
