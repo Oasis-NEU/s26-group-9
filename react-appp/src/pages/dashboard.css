@@ -1,11 +1,10 @@
 .dashboard-page {
-    min-height: 100vh;
+    flex: 1;
     display: flex;
     background-color: #f8f7f6;
     color: #746455;
     position: relative;
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
+    min-height: calc(100vh - 60px);
 }
 
 /* .dashboard-productivity-button {
@@ -114,7 +113,7 @@
 }
 
 .dashboard-right-sidebar {
-    width: 220px;
+    width: 350px;
     background-color: #99836F;
     color: #ffffff;
     display: flex;
@@ -130,4 +129,68 @@
     font-size: 1.125rem;
     font-weight: 700;
     border-bottom: 1px solid #8a7664;
+}
+
+.dashboard-wrapper {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-topbar {
+    width: 100%;
+    background-color: #99836F;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    border-bottom: 1px solid #8a7664;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 0 24px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.dashboard-topbar a {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.dashboard-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.dashboard-topbar-date {
+    font-size: 0.85rem;
+    color: #ffffff;
+    opacity: 0.85;
+}
+
+.dashboard-topbar-settings {
+    background: transparent;
+    border: 1px solid #ffffff;
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.dashboard-topbar-settings:hover {
+    background-color: #8a7664;
+}
+
+.dashboard-topbar-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
 }
