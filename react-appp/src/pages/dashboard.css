@@ -86,6 +86,10 @@
     padding: 40px;
 }
 
+.dashboard-content--full {
+    padding: 0;
+}
+
 .dashboard-title {
     margin: 0;
     font-size: 2rem;
@@ -114,14 +118,14 @@
 
 .dashboard-right-sidebar {
     width: 350px;
-    background-color: #99836F;
-    color: #ffffff;
+    background-color: #EAE0D5;
+    color: #5D4838;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     padding: 24px 12px;
-    border-right: 1px solid #8a7664;
+    border-left: 1px solid #D6C7B6;
 }
 
 .dashboard-right-title {

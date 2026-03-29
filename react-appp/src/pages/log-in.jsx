@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import './log-in.css';
@@ -9,6 +9,16 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState('');
+
+    useEffect(() => {
+        async function checkAuth() {
+            const { data, error } = await supabase.auth.getUser();
+            if (!error && data?.user) {
+                navigate('/dashboard');
+            }
+        }
+        checkAuth();
+    }, [navigate]);
 
     async function handleSubmit(event) {
         event.preventDefault();

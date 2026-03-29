@@ -1,0 +1,265 @@
+.overview-layout {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+.overview-main {
+    flex: 1;
+    padding: 0;
+    background: #ffffff;
+    overflow: auto;
+}
+
+.overview-content {
+    width: 100%;
+    max-width: none;
+    min-height: 100%;
+    padding: 10px 22px 0;
+    box-sizing: border-box;
+}
+
+.overview-header {
+    margin-bottom: 18px;
+}
+
+.overview-header h1 {
+    margin: 0 0 6px;
+    color: #5d4838;
+    font-size: 1.8rem;
+}
+
+.overview-header p {
+    margin: 0;
+    color: #8b6f5c;
+    font-size: 0.9rem;
+}
+
+.overview-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.overview-stat-card {
+    background: #fff;
+    border: 2px solid #c8b8a8;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.overview-stat-value {
+    font-size: 1.9rem;
+    color: #8b6f5c;
+}
+
+.overview-stat-label {
+    color: #8b6f5c;
+    font-size: 0.9rem;
+}
+
+.overview-focus-card {
+    background: #fff;
+    border: 2px solid #cd8b5c;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.overview-focus-dot {
+    width: 10px;
+    height: 10px;
+    background: #cd8b5c;
+    border-radius: 50%;
+    margin-top: 6px;
+}
+
+.overview-focus-body h3 {
+    margin: 0 0 6px;
+    color: #5d4838;
+    font-size: 1rem;
+}
+
+.overview-focus-body p {
+    margin: 0;
+    color: #8b6f5c;
+    font-size: 0.88rem;
+}
+
+.overview-section-title {
+    margin: 0 0 10px;
+    color: #5d4838;
+    font-size: 0.86rem;
+    letter-spacing: 0.06em;
+}
+
+.overview-deadline-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.overview-deadline-card {
+    background: #fff;
+    border: 1px solid #c8b8a8;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.overview-deadline-card h4 {
+    margin: 0 0 6px;
+    color: #5d4838;
+    font-size: 0.98rem;
+}
+
+.overview-deadline-card p {
+    margin: 0;
+    color: #8b6f5c;
+    font-size: 0.85rem;
+}
+
+.overview-days-badge {
+    background: #cd8b5c;
+    color: #fff;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.overview-sidebar {
+    width: 320px;
+    background: #eae0d5;
+    padding: 24px 20px;
+    overflow: auto;
+}
+
+.overview-panel-block {
+    margin-bottom: 18px;
+}
+
+.overview-panel-block h3 {
+    margin: 0 0 10px;
+    color: #5d4838;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+}
+
+.overview-chart-card,
+.overview-week-card,
+.overview-streak-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.overview-legend {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.overview-legend-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #5d4838;
+    font-size: 0.86rem;
+}
+
+.overview-legend-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.overview-legend-swatch {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+}
+
+.overview-week-bars {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.overview-week-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.overview-week-col span {
+    color: #8b6f5c;
+    font-size: 0.75rem;
+}
+
+.overview-week-bar {
+    width: 26px;
+    height: 56px;
+    border-radius: 8px;
+    background: #c8b8a8;
+}
+
+.overview-week-bar.is-active {
+    background: #cd8b5c;
+}
+
+.overview-streak-card {
+    text-align: center;
+}
+
+.overview-streak-count {
+    font-size: 2.2rem;
+    color: #cd8b5c;
+    line-height: 1;
+}
+
+.overview-streak-label {
+    color: #8b6f5c;
+    font-size: 0.9rem;
+    margin: 4px 0 10px;
+}
+
+.overview-streak-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+.overview-streak-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #c8b8a8;
+}
+
+.overview-streak-dot.is-active {
+    background: #cd8b5c;
+}
+
+@media (max-width: 1080px) {
+    .overview-layout {
+        flex-direction: column;
+    }
+
+    .overview-sidebar {
+        width: 100%;
+    }
+
+    .overview-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
