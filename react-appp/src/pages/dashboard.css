@@ -5,6 +5,7 @@
     color: #746455;
     position: relative;
     min-height: calc(100vh - 60px);
+    align-items: stretch;
 }
 
 /* .dashboard-productivity-button {
@@ -84,6 +85,9 @@
 .dashboard-content {
     flex: 1;
     padding: 40px;
+    align-self: stretch; 
+    display: flex;       
+    flex-direction: column; 
 }
 
 .dashboard-content--full {

@@ -5,6 +5,7 @@ import { Overview } from "./overview";
 import useAppData from '../hooks/useAppData';
 import './dashboard.css';
 import { supabase } from '../lib/supabase';
+import Settings from './settings';
 
 const navItems = ["My Tasks", "Friends", "Settings"];
 
@@ -93,12 +94,14 @@ export default function Dashboard() {
         <main className={`dashboard-content ${active === "My Tasks" ? "dashboard-content--full" : ""}`}>
           {active === "My Tasks" ? (
             <Overview tasks={tasks} sessions={sessions} userName={userName} />
-          ) : (
-            <>
-              <h1 className="dashboard-title">{active}</h1>
-              <p className="dashboard-text">Welcome to your {active} page.</p>
-            </>
-          )}
+          ) : active === "Settings" ? (
+    <Settings />
+) : (
+    <>
+        <h1 className="dashboard-title">{active}</h1>
+        <p className="dashboard-text">Welcome to your {active} page.</p>
+    </>
+)}
         </main>
 
         <aside className="dashboard-right-sidebar">
