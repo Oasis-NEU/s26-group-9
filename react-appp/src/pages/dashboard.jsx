@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from 'react-router-dom';
-import TaskDashboard from "./taskdashboard";
+import { useNavigate } from 'react-router-dom';
 import ActivityPanel from "./activitypanel";
 import { Overview } from "./overview";
 import useAppData from '../hooks/useAppData';
@@ -11,11 +10,8 @@ const navItems = ["My Tasks", "Friends", "Settings"];
 
 export default function Dashboard() {
   const [active, setActive] = useState("My Tasks");
-  const { tasks, setTasks, friends, sessions, activity, addTask, isLoading, error } = useAppData();
+  const { tasks, sessions, activity, isLoading } = useAppData();
   const [userName, setUserName] = useState("");
-  const [detailMode, setDetailMode] = useState('overview');
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [selectedFriendId, setSelectedFriendId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,55 +25,38 @@ export default function Dashboard() {
 
   const handleLogoClick = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    user ? resetToOverview() : navigate('/');
-};
+    user ? setActive("My Tasks") : navigate('/');
+  };
 
-  const resetToOverview = () => {
-    setDetailMode('overview');
-    setSelectedTaskId(null);
-    setSelectedFriendId(null);
-    setActive("My Tasks");
-};
-
-const handleSelectTask = (id) => {
-    setSelectedTaskId(id);
-    setSelectedFriendId(null);
-    setDetailMode('task');
-};
-
-const handleSelectFriend = (id) => {
-    setSelectedFriendId(id);
-    setSelectedTaskId(null);
-    setDetailMode('friend');
-};
-
-  const activeDetail = detailMode === 'task'
-    ? tasks.find(t => t.id === selectedTaskId)
-    : detailMode === 'friend'
-    ? friends.find(f => f.id === selectedFriendId)
-    : null;
-
-  const activity = tasks.map(t => ({
-    label: t.name,
-    value: sessions
-        .filter(s => s.task_id === t.id)
-        .reduce((sum, s) => sum + (s.duration_mins ?? 0), 0)
-})).filter(a => a.value > 0);
-
-  if (loading) return <div style={{ padding: 40 }}>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          color: '#99836F',
+          fontSize: '1rem'
+        }}
+      >
+        Loading your tasks...
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-wrapper">
-    <header className="dashboard-topbar">
-    <button
-    type="button"
-    className="dashboard-home-link"
-    onClick={handleLogoClick}
-    aria-label="Go to launch page or reset dashboard">
-    ProductiviTea
-    </button>
-    <div className="dashboard-topbar-right">
-        <span className="dashboard-topbar-date">
+      <header className="dashboard-topbar">
+        <button
+          type="button"
+          className="dashboard-home-link"
+          onClick={handleLogoClick}
+          aria-label="Go to launch page or reset dashboard">
+          ProductiviTea
+        </button>
+        <div className="dashboard-topbar-right">
+          <span className="dashboard-topbar-date">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             })}
