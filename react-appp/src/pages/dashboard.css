@@ -198,3 +198,19 @@
     font-weight: 600;
     color: #ffffff;
 }
+
+.dashboard-home-link {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+    letter-spacing: 0.01em;
+}
+
+.dashboard-home-link:hover {
+    opacity: 0.85;
+}
