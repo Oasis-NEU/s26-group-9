@@ -10,7 +10,7 @@ const navItems = ["My Tasks", "Friends", "Settings"];
 
 export default function Dashboard() {
   const [active, setActive] = useState("My Tasks");
-  const { tasks, sessions, activity, isLoading } = useAppData();
+  const { tasks, sessions, activity, addTask, isLoading, error } = useAppData();
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
