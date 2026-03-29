@@ -28,6 +28,10 @@ export default function Dashboard() {
     user ? setActive("My Tasks") : navigate('/');
   };
 
+  const handleAddTask = () => {
+    navigate('/tasks/new');
+  };
+
   if (isLoading) {
     return (
       <div
@@ -88,6 +92,12 @@ export default function Dashboard() {
               </button>
             ))}
           </nav>
+
+          <section className="dashboard-task-rail">
+            <button type="button" className="dashboard-add-task-btn" onClick={handleAddTask}>
+              + Add task
+            </button>
+          </section>
         </aside>
 
         <main className={`dashboard-content ${active === "My Tasks" ? "dashboard-content--full" : ""}`}>
