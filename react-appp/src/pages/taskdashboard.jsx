@@ -43,7 +43,7 @@ export default function TaskDashboard({ tasks = [], addTask, isLoading = false, 
         <button className="task-detail__back" onClick={() => setSelectedId(null)}>
           ← Back to all tasks
         </button>
-        <h1 className="task-detail__title">{selectedTask.title || selectedTask.name || "Untitled Task"}</h1>
+        <h1 className="task-detail__title">{selectedTask.title || "Untitled Task"}</h1>
         <p className="task-detail__meta">Time spent: {formatTimeSpent(selectedTask)}</p>
         <div className="task-detail__section">
           <h3 className="task-detail__section-title">Summary</h3>
