@@ -6,14 +6,25 @@ import useAppData from '../hooks/useAppData';
 import './dashboard.css';
 import { supabase } from '../lib/supabase';
 import Settings from './settings';
-
+import FriendSidebar from "./FriendSidebar";
 const navItems = ["My Tasks", "Friends", "Settings"];
+console.log("RUNNING THIS DASHBOARD FILE");
 
 export default function Dashboard() {
   const [active, setActive] = useState("My Tasks");
-  const { tasks, sessions, activity, isLoading } = useAppData();
+  const { tasks, sessions, activity, friendships, isLoading } = useAppData();
+  const friends = friendships.map(f => ({
+  id: f.friend_id,
+  name: f.friend_name,
+  status: f.status
+}));
   const [userName, setUserName] = useState("");
+   const [selectedFriendId, setSelectedFriendId] = useState(null);
   const navigate = useNavigate();
+ 
+const handleAddFriend = async (username) => {
+  console.log("search this username in supabase:", username);
+};
 
   useEffect(() => {
     async function loadUser() {
@@ -101,18 +112,23 @@ export default function Dashboard() {
           </section>
         </aside>
 
-        <main className={`dashboard-content ${active === "My Tasks" ? "dashboard-content--full" : ""}`}>
-          {active === "My Tasks" ? (
-            <Overview tasks={tasks} sessions={sessions} userName={userName} />
-          ) : active === "Settings" ? (
-    <Settings userName={userName} setUserName={setUserName} />
-) : (
-    <>
-        <h1 className="dashboard-title">{active}</h1>
-        <p className="dashboard-text">Welcome to your {active} page.</p>
-    </>
-)}
-        </main>
+  <main className={`dashboard-content ${active === "My Tasks" ? "dashboard-content--full" : ""}`}>
+  {active === "My Tasks" && (
+    <Overview tasks={tasks} sessions={sessions} userName={userName} />
+  )}
+
+  {active === "Settings" && <Settings />}
+
+  {active === "Friends" && (
+    <FriendSidebar
+      friends={friends}
+      selectedFriendId={selectedFriendId}
+      onSelectFriend={setSelectedFriendId}
+      onAddFriend={handleAddFriend}
+    />
+  )}
+</main>
+  
 
         <aside className="dashboard-right-sidebar">
           <ActivityPanel activity={activity} sessions={sessions} tasks={tasks} title="Time Spent Activity" />
