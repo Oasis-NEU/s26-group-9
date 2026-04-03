@@ -4,10 +4,12 @@ import './settings.css';
 
 const settingsTabs = ["Profile", "Notifications"];
 
-export default function Settings() {
+export default function Settings({ onProfileUpdated }) {
     const [activeTab, setActiveTab] = useState("Profile");
     const [editingName, setEditingName] = useState(false);
     const [editingEmail, setEditingEmail] = useState(false);
+    const [isSavingName, setIsSavingName] = useState(false);
+    const [isSavingEmail, setIsSavingEmail] = useState(false);
     const [displayName, setDisplayName] = useState("Your Name");
     const [email, setEmail] = useState("your@email.com");
     const [tempName, setTempName] = useState("");
@@ -95,6 +97,9 @@ export default function Settings() {
                 {activeTab === "Profile" && (
                     <div className="settings-section">
                         <h2 className="settings-section-title">Profile</h2>
+                        {statusMessage && (
+                            <p className={`settings-status settings-status--${statusType}`}>{statusMessage}</p>
+                        )}
 
                         <div className="settings-row">
                             <div>
@@ -104,8 +109,13 @@ export default function Settings() {
                                     : <div className="settings-row-value">{displayName}</div>
                                 }
                             </div>
-                            <button type="button" className="settings-edit-btn" onClick={editingName ? handleSaveName : handleEditName}>
-                                {editingName ? 'Save' : 'Edit'}
+                            <button
+                                type="button"
+                                className="settings-edit-btn"
+                                onClick={editingName ? handleSaveName : handleEditName}
+                                disabled={isSavingName}
+                            >
+                                {editingName ? (isSavingName ? 'Saving...' : 'Save') : 'Edit'}
                             </button>
                         </div>
 
@@ -117,8 +127,13 @@ export default function Settings() {
                                     : <div className="settings-row-value">{email}</div>
                                 }
                             </div>
-                            <button type="button" className="settings-edit-btn" onClick={editingEmail ? handleSaveEmail : handleEditEmail}>
-                                {editingEmail ? 'Save' : 'Edit'}
+                            <button
+                                type="button"
+                                className="settings-edit-btn"
+                                onClick={editingEmail ? handleSaveEmail : handleEditEmail}
+                                disabled={isSavingEmail}
+                            >
+                                {editingEmail ? (isSavingEmail ? 'Saving...' : 'Save') : 'Edit'}
                             </button>
                         </div>
 
