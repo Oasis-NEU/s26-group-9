@@ -16,6 +16,7 @@ export default function Settings({ onProfileUpdated }) {
     const [tempEmail, setTempEmail] = useState("");
     const [deadlineReminders, setDeadlineReminders] = useState(true);
     const [userId, setUserId] = useState(null);
+    const [statusMessage, setStatusMessage] = useState("");
 
 
     // Load user info and notification settings from Supabase
