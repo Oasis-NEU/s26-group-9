@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import './settings.css';
 
@@ -12,8 +12,55 @@ export default function Settings() {
     const [email, setEmail] = useState("your@email.com");
     const [tempName, setTempName] = useState("");
     const [tempEmail, setTempEmail] = useState("");
+    const [deadlineReminders, setDeadlineReminders] = useState(true);
+    const [userId, setUserId] = useState(null);
 
-    const handleEditName = () => { setTempName(displayName); setEditingName(true); setUserName(tempName); };
+
+    // Load user info and notification settings from Supabase
+    useEffect(() => {
+        async function loadSettings() {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) return;
+
+    const uid = authData.user.id;
+    setUserId(uid);
+    setDisplayName(authData.user.user_metadata?.full_name || "Your Name");
+    setEmail(authData.user.email || "your@email.com");
+
+    const { data } = await supabase
+        .from('notification_settings')
+        .select('*')
+        .eq('user_id', uid)
+        .maybeSingle();
+    
+    console.log('loaded notification settings:', data);
+
+    if (data) {
+        setDeadlineReminders(data.deadline_reminders);
+    }
+}
+        loadSettings();
+    }, []);
+
+    // Save toggle to Supabase when it changes
+   const handleToggleDeadlineReminders = async (val) => {
+    setDeadlineReminders(val);
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) return;
+    
+    const { data, error } = await supabase
+        .from('notification_settings')
+        .upsert({ 
+            user_id: authData.user.id, 
+            deadline_reminders: val,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+    console.log('saved:', val, 'data:', data, 'error:', error);
+};
+
+
+    const handleEditName = () => { setTempName(displayName); setEditingName(true); };
     const handleSaveName = () => { setDisplayName(tempName); setEditingName(false); };
     const handleEditEmail = () => { setTempEmail(email); setEditingEmail(true); };
     const handleSaveEmail = () => { setEmail(tempEmail); setEditingEmail(false); };
@@ -84,12 +131,27 @@ export default function Settings() {
                     </div>
                 )}
 
-                {activeTab !== "Profile" && (
-                    <div className="settings-section">
-                        <h2 className="settings-section-title">{activeTab}</h2>
-                        <p className="settings-coming-soon">Coming soon.</p>
-                    </div>
-                )}
+                {activeTab === "Notifications" && (
+    <div className="settings-section">
+        <h2 className="settings-section-title">Notifications</h2>
+
+        <div className="settings-row">
+            <div>
+                <div className="settings-row-label">Deadline reminders</div>
+                <div className="settings-row-value">Get notified 24h before due date</div>
+            </div>
+            <label className="settings-toggle">
+                <input
+                    type="checkbox"
+                    checked={deadlineReminders}
+                    onChange={e => handleToggleDeadlineReminders(e.target.checked)} 
+
+                />
+                <span className="settings-toggle-slider" />
+            </label>
+        </div>
+    </div>
+)}
             </div>
         </div>
     );
