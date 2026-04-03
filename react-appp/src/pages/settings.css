@@ -14,7 +14,7 @@
     justify-content: space-between;
     padding: 16px 0;
     border-right: 1px solid #e0d8d0;
-    height: calc(100vh - 60px); 
+    height: calc(100vh - 60px);
 }
 
 .settings-tab {
@@ -69,6 +69,19 @@
     margin: 0 0 24px 0;
 }
 
+.settings-status {
+    margin: 0 0 16px;
+    font-size: 0.9rem;
+}
+
+.settings-status--success {
+    color: #5f7a56;
+}
+
+.settings-status--error {
+    color: #a7544a;
+}
+
 .settings-row {
     display: flex;
     justify-content: space-between;
@@ -100,6 +113,12 @@
 
 .settings-edit-btn:hover {
     text-decoration: underline;
+}
+
+.settings-edit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    text-decoration: none;
 }
 
 .settings-coming-soon {

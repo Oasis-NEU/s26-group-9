@@ -38,11 +38,11 @@
 
 .dashboard-sidebar {
     width: 240px;
-    background-color: #a48670;
+    background-color: #99836F;
     color: #ffffff;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #927966;
+    border-right: 1px solid #8a7664;
 }
 
 .dashboard-brand {
@@ -221,9 +221,9 @@
 .dashboard-content {
     flex: 1;
     padding: 40px;
-    align-self: stretch; 
-    display: flex;       
-    flex-direction: column; 
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
 }
 
 .dashboard-content--full {

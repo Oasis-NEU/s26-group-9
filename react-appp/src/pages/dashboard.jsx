@@ -14,17 +14,17 @@ export default function Dashboard() {
   const [active, setActive] = useState("My Tasks");
   const { tasks, sessions, activity, friendships, isLoading } = useAppData();
   const friends = friendships.map(f => ({
-  id: f.friend_id,
-  name: f.friend_name,
-  status: f.status
-}));
+    id: f.friend_id,
+    name: f.friend_name,
+    status: f.status
+  }));
   const [userName, setUserName] = useState("");
-   const [selectedFriendId, setSelectedFriendId] = useState(null);
+  const [selectedFriendId, setSelectedFriendId] = useState(null);
   const navigate = useNavigate();
- 
-const handleAddFriend = async (username) => {
-  console.log("search this username in supabase:", username);
-};
+
+  const handleAddFriend = async (username) => {
+    console.log("search this username in supabase:", username);
+  };
 
   useEffect(() => {
     async function loadUser() {
@@ -112,23 +112,31 @@ const handleAddFriend = async (username) => {
           </section>
         </aside>
 
-  <main className={`dashboard-content ${active === "My Tasks" ? "dashboard-content--full" : ""}`}>
-  {active === "My Tasks" && (
-    <Overview tasks={tasks} sessions={sessions} userName={userName} />
-  )}
+        <main className={`dashboard-content ${active === "My Tasks" ? "dashboard-content--full" : ""}`}>
+          {active === "My Tasks" && (
+            <Overview tasks={tasks} sessions={sessions} userName={userName} />
+          )}
 
-  {active === "Settings" && <Settings />}
+          {active === "Settings" && (
+            <Settings
+              onProfileUpdated={({ displayName }) => {
+                if (displayName) {
+                  setUserName(displayName);
+                }
+              }}
+            />
+          )}
 
-  {active === "Friends" && (
-    <FriendSidebar
-      friends={friends}
-      selectedFriendId={selectedFriendId}
-      onSelectFriend={setSelectedFriendId}
-      onAddFriend={handleAddFriend}
-    />
-  )}
-</main>
-  
+          {active === "Friends" && (
+            <FriendSidebar
+              friends={friends}
+              selectedFriendId={selectedFriendId}
+              onSelectFriend={setSelectedFriendId}
+              onAddFriend={handleAddFriend}
+            />
+          )}
+        </main>
+
 
         <aside className="dashboard-right-sidebar">
           <ActivityPanel activity={activity} sessions={sessions} tasks={tasks} title="Time Spent Activity" />
