@@ -105,7 +105,7 @@ export default function Dashboard() {
           {active === "My Tasks" ? (
             <Overview tasks={tasks} sessions={sessions} userName={userName} />
           ) : active === "Settings" ? (
-    <Settings />
+    <Settings userName={userName} setUserName={setUserName} />
 ) : (
     <>
         <h1 className="dashboard-title">{active}</h1>
