@@ -303,6 +303,66 @@
     color: #6f5a49;
 }
 
+.dashboard-task-detail-row--interactive {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.dashboard-subtask-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.dashboard-subtask-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #6f5a49;
+    border-radius: 4px;
+    background-color: #fcf8f3;
+    cursor: pointer;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dashboard-subtask-checkbox:checked {
+    background-color: #6f5a49;
+    box-shadow: inset 0 0 0 2px #fcf8f3;
+}
+
+.dashboard-subtask-title {
+    color: #6f5a49;
+}
+
+.dashboard-subtask-title.is-complete {
+    text-decoration: line-through;
+    color: #968678;
+}
+
+.dashboard-subtask-remove-btn {
+    border: none;
+    background: transparent;
+    color: #a7544a;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.dashboard-subtask-remove-btn:hover:not(:disabled) {
+    text-decoration: underline;
+}
+
+.dashboard-subtask-remove-btn:disabled,
+.dashboard-subtask-checkbox:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .dashboard-add-subtask-form {
     display: flex;
     gap: 8px;
@@ -348,6 +408,57 @@
 .dashboard-add-subtask-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.dashboard-subtask-message {
+    margin: -4px 0 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.dashboard-subtask-message--success {
+    color: #5f7a56;
+}
+
+.dashboard-subtask-message--error {
+    color: #a7544a;
+}
+
+.dashboard-subtask-toast {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 300;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+    animation: dashboard-toast-slide-in 0.18s ease-out;
+}
+
+.dashboard-subtask-toast--success {
+    background: #eaf3e7;
+    color: #436041;
+    border: 1px solid #c9dcc2;
+}
+
+.dashboard-subtask-toast--error {
+    background: #f8e9e7;
+    color: #8f3f38;
+    border: 1px solid #e4c2be;
+}
+
+@keyframes dashboard-toast-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .dashboard-priority-selector {

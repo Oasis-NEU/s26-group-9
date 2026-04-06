@@ -178,6 +178,18 @@ export default function useAppData() {
             supabase.from('friendships').select('*').or(`user_id.eq.${userId},friend_id.eq.${userId}`),
         ]);
 
+        let resolvedSubtasksResult = subtasksResult;
+        const taskRows = Array.isArray(tasksResult?.data) ? tasksResult.data : [];
+        const taskIds = taskRows.map((task) => task?.id).filter(Boolean);
+
+        // Fallback for schemas where subtasks are linked only by task_id (no user_id column).
+        if (taskIds.length > 0 && (!Array.isArray(subtasksResult?.data) || subtasksResult.data.length === 0)) {
+            const byTaskResult = await supabase.from('subtasks').select('*').in('task_id', taskIds);
+            if (!byTaskResult.error) {
+                resolvedSubtasksResult = byTaskResult;
+            }
+        }
+
         const blockingErrors = [tasksResult.error, friendshipsResult.error]
             .filter(Boolean)
             .filter((e) => !isMissingColumnError(e));
@@ -193,13 +205,13 @@ export default function useAppData() {
             setError(sessionsResult.error.message);
         }
 
-        if (subtasksResult.error && !isMissingTableError(subtasksResult.error) && !isMissingColumnError(subtasksResult.error)) {
-            setError(subtasksResult.error.message);
+        if (resolvedSubtasksResult.error && !isMissingTableError(resolvedSubtasksResult.error) && !isMissingColumnError(resolvedSubtasksResult.error)) {
+            setError(resolvedSubtasksResult.error.message);
         }
 
         setProfile(profileResult?.data || null);
         setTasks(Array.isArray(tasksResult?.data) ? tasksResult.data : []);
-        setSubtasks(Array.isArray(subtasksResult?.data) ? subtasksResult.data : []);
+        setSubtasks(Array.isArray(resolvedSubtasksResult?.data) ? resolvedSubtasksResult.data : []);
         setSessions(Array.isArray(sessionsResult?.data) ? sessionsResult.data : []);
         setFriendships(Array.isArray(friendshipsResult?.data) ? friendshipsResult.data : []);
         setIsLoading(false);

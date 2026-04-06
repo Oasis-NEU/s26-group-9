@@ -37,12 +37,26 @@ function toInitials(name) {
   return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
 }
 
+function isSubtaskComplete(subtask) {
+  if (typeof subtask?.is_done === 'boolean') {
+    return subtask.is_done;
+  }
+  if (typeof subtask?.done === 'boolean') {
+    return subtask.done;
+  }
+  const status = String(subtask?.status || '').toLowerCase();
+  return status === 'done' || status === 'completed';
+}
+
 export default function Dashboard() {
   const [active, setActive] = useState("Task");
-  const { tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
+  const { user, tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [newSubtaskName, setNewSubtaskName] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const [subtaskMessage, setSubtaskMessage] = useState("");
+  const [subtaskMessageType, setSubtaskMessageType] = useState("success");
+  const [subtaskActionId, setSubtaskActionId] = useState(null);
   const [selectedPriority, setSelectedPriority] = useState("medium");
   const [isSavingPriority, setIsSavingPriority] = useState(false);
   const friends = friendships.map(f => ({
@@ -76,13 +90,11 @@ export default function Dashboard() {
 
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) || null;
   const selectedTaskSubtasks = subtasks.filter((subtask) => {
-    return subtask.task_id === selectedTaskId || subtask.taskId === selectedTaskId;
+    const relatedTaskId = subtask.task_id ?? subtask.taskId;
+    return String(relatedTaskId || '') === String(selectedTaskId || '');
   });
 
-  const completedSubtasks = selectedTaskSubtasks.filter((subtask) => {
-    const status = String(subtask?.status || '').toLowerCase();
-    return status === 'done' || status === 'completed';
-  }).length;
+  const completedSubtasks = selectedTaskSubtasks.filter((subtask) => isSubtaskComplete(subtask)).length;
 
   const dueDate = selectedTask?.due_date ? new Date(selectedTask.due_date) : null;
   const daysLeft = dueDate && !Number.isNaN(dueDate.getTime())
@@ -95,21 +107,55 @@ export default function Dashboard() {
     }
   }, [selectedTask?.id, selectedTask?.priority]);
 
+  useEffect(() => {
+    if (!subtaskMessage) return;
+
+    const timeoutId = setTimeout(() => {
+      setSubtaskMessage("");
+    }, 2200);
+
+    return () => clearTimeout(timeoutId);
+  }, [subtaskMessage]);
+
   const handleAddSubtask = async (e) => {
     e.preventDefault();
     const trimmed = newSubtaskName.trim();
     if (!trimmed || !selectedTask?.id) return;
 
+    setSubtaskMessage("");
     setIsAddingSubtask(true);
-    const { error } = await supabase.from('subtasks').insert({
+    const userId = user?.id || (await supabase.auth.getUser()).data?.user?.id;
+    if (!userId) {
+      setSubtaskMessageType("error");
+      setSubtaskMessage("You must be logged in to add subtasks.");
+      setIsAddingSubtask(false);
+      return;
+    }
+
+    // Support both known schema variants: title/is_done and text/done.
+    let insertResult = await supabase.from('subtasks').insert({
+      user_id: userId,
       task_id: selectedTask.id,
       title: trimmed,
-      status: 'pending',
+      is_done: false,
     });
 
-    if (!error) {
+    if (insertResult.error) {
+      insertResult = await supabase.from('subtasks').insert({
+        task_id: selectedTask.id,
+        text: trimmed,
+        done: false,
+      });
+    }
+
+    if (!insertResult.error) {
       setNewSubtaskName("");
       await refresh();
+      setSubtaskMessageType("success");
+      setSubtaskMessage("Subtask added.");
+    } else {
+      setSubtaskMessageType("error");
+      setSubtaskMessage(insertResult.error.message || "Could not add subtask.");
     }
     setIsAddingSubtask(false);
   };
@@ -128,6 +174,64 @@ export default function Dashboard() {
       await refresh();
     }
     setIsSavingPriority(false);
+  };
+
+  const handleToggleSubtaskComplete = async (subtask) => {
+    if (!subtask?.id) return;
+
+    const nextDone = !isSubtaskComplete(subtask);
+    setSubtaskActionId(subtask.id);
+    setSubtaskMessage("");
+
+    let result = await supabase
+      .from('subtasks')
+      .update({ is_done: nextDone })
+      .eq('id', subtask.id);
+
+    if (result.error) {
+      result = await supabase
+        .from('subtasks')
+        .update({ done: nextDone })
+        .eq('id', subtask.id);
+    }
+
+    if (result.error) {
+      result = await supabase
+        .from('subtasks')
+        .update({ status: nextDone ? 'done' : 'pending' })
+        .eq('id', subtask.id);
+    }
+
+    if (!result.error) {
+      await refresh();
+      setSubtaskMessageType('success');
+      setSubtaskMessage(nextDone ? 'Subtask marked complete.' : 'Subtask marked incomplete.');
+    } else {
+      setSubtaskMessageType('error');
+      setSubtaskMessage(result.error.message || 'Could not update subtask.');
+    }
+
+    setSubtaskActionId(null);
+  };
+
+  const handleDeleteSubtask = async (subtaskId) => {
+    if (!subtaskId) return;
+
+    setSubtaskActionId(subtaskId);
+    setSubtaskMessage("");
+
+    const { error } = await supabase.from('subtasks').delete().eq('id', subtaskId);
+
+    if (!error) {
+      await refresh();
+      setSubtaskMessageType('success');
+      setSubtaskMessage('Subtask removed.');
+    } else {
+      setSubtaskMessageType('error');
+      setSubtaskMessage(error.message || 'Could not remove subtask.');
+    }
+
+    setSubtaskActionId(null);
   };
 
   const handleLogoClick = async () => {
@@ -301,8 +405,27 @@ export default function Dashboard() {
                       <div className="dashboard-task-detail-row">No subtasks yet.</div>
                     ) : (
                       selectedTaskSubtasks.slice(0, 5).map((subtask) => (
-                        <div key={subtask.id} className="dashboard-task-detail-row">
-                          {subtask.title || subtask.name || 'Untitled subtask'}
+                        <div key={subtask.id} className="dashboard-task-detail-row dashboard-task-detail-row--interactive">
+                          <label className="dashboard-subtask-main">
+                            <input
+                              type="checkbox"
+                              className="dashboard-subtask-checkbox"
+                              checked={isSubtaskComplete(subtask)}
+                              onChange={() => handleToggleSubtaskComplete(subtask)}
+                              disabled={subtaskActionId === subtask.id}
+                            />
+                            <span className={`dashboard-subtask-title ${isSubtaskComplete(subtask) ? 'is-complete' : ''}`}>
+                              {subtask.title || subtask.text || subtask.name || 'Untitled subtask'}
+                            </span>
+                          </label>
+                          <button
+                            type="button"
+                            className="dashboard-subtask-remove-btn"
+                            onClick={() => handleDeleteSubtask(subtask.id)}
+                            disabled={subtaskActionId === subtask.id}
+                          >
+                            Remove
+                          </button>
                         </div>
                       ))
                     )}
@@ -325,6 +448,12 @@ export default function Dashboard() {
                       </button>
                     ))}
                   </div>
+
+                  {subtaskMessage && (
+                    <div className={`dashboard-subtask-toast dashboard-subtask-toast--${subtaskMessageType}`}>
+                      {subtaskMessage}
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
