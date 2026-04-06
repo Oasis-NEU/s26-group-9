@@ -11,7 +11,7 @@
     min-width: 180px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     padding: 16px 0;
     border-right: 1px solid #e0d8d0;
     height: calc(100vh - 60px);
@@ -41,9 +41,8 @@
 }
 
 .settings-logout {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
+    margin-top: auto;
+    align-self: flex-start;
     padding: 10px 20px;
     background: transparent;
     border: none;
@@ -55,6 +54,12 @@
 
 .settings-logout:hover {
     text-decoration: underline;
+}
+
+.settings-logout:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    text-decoration: none;
 }
 
 .settings-content {
@@ -160,10 +165,10 @@
     transition: transform 0.2s ease;
 }
 
-.settings-toggle input:checked + .settings-toggle-slider {
+.settings-toggle input:checked+.settings-toggle-slider {
     background-color: #99836F;
 }
 
-.settings-toggle input:checked + .settings-toggle-slider::before {
+.settings-toggle input:checked+.settings-toggle-slider::before {
     transform: translateX(20px);
 }

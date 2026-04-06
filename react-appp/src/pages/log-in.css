@@ -10,7 +10,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 4rem 1.5rem;
+    padding: 9rem 1.5rem 4rem;
 }
 
 @media (min-width: 1024px) {
@@ -27,9 +27,11 @@ body {
 }
 
 .login-logo {
-    width: 11rem;
+    width: 9.75rem;
     height: auto;
-    display: inline-block;
+    display: block;
+    margin: 0 auto;
+
 }
 
 .login-title {

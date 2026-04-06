@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import './settings.css';
 
 const settingsTabs = ["Profile", "Notifications"];
 
 export default function Settings({ onProfileUpdated }) {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("Profile");
     const [editingName, setEditingName] = useState(false);
     const [editingEmail, setEditingEmail] = useState(false);
@@ -17,50 +19,52 @@ export default function Settings({ onProfileUpdated }) {
     const [deadlineReminders, setDeadlineReminders] = useState(true);
     const [userId, setUserId] = useState(null);
     const [statusMessage, setStatusMessage] = useState("");
+    const [statusType, setStatusType] = useState("success");
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
 
     // Load user info and notification settings from Supabase
     useEffect(() => {
         async function loadSettings() {
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) return;
+            const { data: authData } = await supabase.auth.getUser();
+            if (!authData?.user) return;
 
-    const uid = authData.user.id;
-    setUserId(uid);
-    setDisplayName(authData.user.user_metadata?.full_name || "Your Name");
-    setEmail(authData.user.email || "your@email.com");
+            const uid = authData.user.id;
+            setUserId(uid);
+            setDisplayName(authData.user.user_metadata?.full_name || "Your Name");
+            setEmail(authData.user.email || "your@email.com");
 
-    const { data } = await supabase
-        .from('notification_settings')
-        .select('*')
-        .eq('user_id', uid)
-        .maybeSingle();
-    
-    console.log('loaded notification settings:', data);
+            const { data } = await supabase
+                .from('notification_settings')
+                .select('*')
+                .eq('user_id', uid)
+                .maybeSingle();
 
-    if (data) {
-        setDeadlineReminders(data.deadline_reminders);
-    }
-}
+            console.log('loaded notification settings:', data);
+
+            if (data) {
+                setDeadlineReminders(data.deadline_reminders);
+            }
+        }
         loadSettings();
     }, []);
 
     // Save toggle to Supabase when it changes
-   const handleToggleDeadlineReminders = async (val) => {
-    setDeadlineReminders(val);
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) return;
-    
-    const { data, error } = await supabase
-        .from('notification_settings')
-        .upsert({ 
-            user_id: authData.user.id, 
-            deadline_reminders: val,
-            updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
+    const handleToggleDeadlineReminders = async (val) => {
+        setDeadlineReminders(val);
+        const { data: authData } = await supabase.auth.getUser();
+        if (!authData?.user) return;
 
-    console.log('saved:', val, 'data:', data, 'error:', error);
-};
+        const { data, error } = await supabase
+            .from('notification_settings')
+            .upsert({
+                user_id: authData.user.id,
+                deadline_reminders: val,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+
+        console.log('saved:', val, 'data:', data, 'error:', error);
+    };
 
 
     const handleEditName = () => { setTempName(displayName); setEditingName(true); };
@@ -69,8 +73,17 @@ export default function Settings({ onProfileUpdated }) {
     const handleSaveEmail = () => { setEmail(tempEmail); setEditingEmail(false); };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        window.location.href = '/';
+        setIsLoggingOut(true);
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+            setStatusType("error");
+            setStatusMessage(error.message || "Could not log out. Please try again.");
+            setIsLoggingOut(false);
+            return;
+        }
+
+        navigate('/login', { replace: true });
     };
 
     return (
@@ -89,8 +102,8 @@ export default function Settings({ onProfileUpdated }) {
                         </button>
                     ))}
                 </div>
-                <button type="button" className="settings-logout" onClick={handleLogout}>
-                    Log out
+                <button type="button" className="settings-logout" onClick={handleLogout} disabled={isLoggingOut}>
+                    {isLoggingOut ? 'Logging out...' : 'Log out'}
                 </button>
             </aside>
 
@@ -148,26 +161,26 @@ export default function Settings({ onProfileUpdated }) {
                 )}
 
                 {activeTab === "Notifications" && (
-    <div className="settings-section">
-        <h2 className="settings-section-title">Notifications</h2>
+                    <div className="settings-section">
+                        <h2 className="settings-section-title">Notifications</h2>
 
-        <div className="settings-row">
-            <div>
-                <div className="settings-row-label">Deadline reminders</div>
-                <div className="settings-row-value">Get notified 24h before due date</div>
-            </div>
-            <label className="settings-toggle">
-                <input
-                    type="checkbox"
-                    checked={deadlineReminders}
-                    onChange={e => handleToggleDeadlineReminders(e.target.checked)} 
+                        <div className="settings-row">
+                            <div>
+                                <div className="settings-row-label">Deadline reminders</div>
+                                <div className="settings-row-value">Get notified 24h before due date</div>
+                            </div>
+                            <label className="settings-toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={deadlineReminders}
+                                    onChange={e => handleToggleDeadlineReminders(e.target.checked)}
 
-                />
-                <span className="settings-toggle-slider" />
-            </label>
-        </div>
-    </div>
-)}
+                                />
+                                <span className="settings-toggle-slider" />
+                            </label>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
