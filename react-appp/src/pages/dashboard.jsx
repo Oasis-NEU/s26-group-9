@@ -19,11 +19,51 @@ function formatMinutes(value) {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
+function extractDateParts(dateValue) {
+  const raw = String(dateValue || '').trim();
+  if (!raw) return null;
+
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return {
+      year: Number(match[1]),
+      month: Number(match[2]),
+      day: Number(match[3]),
+    };
+  }
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+  };
+}
+
 function formatDueDate(dateValue) {
-  if (!dateValue) return "No due date";
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return "No due date";
+  const parts = extractDateParts(dateValue);
+  if (!parts) return "No due date";
+  const date = new Date(parts.year, parts.month - 1, parts.day);
   return `Due ${date.toLocaleDateString('en-US', { weekday: 'short' })}`;
+}
+
+function formatDueDateFull(dateValue) {
+  const parts = extractDateParts(dateValue);
+  if (!parts) return 'No due date';
+  const date = new Date(parts.year, parts.month - 1, parts.day);
+  return date.toLocaleDateString('en-US');
+}
+
+function toDateInputValue(dateValue) {
+  const parts = extractDateParts(dateValue);
+  if (!parts) return '';
+
+  const y = String(parts.year);
+  const m = String(parts.month).padStart(2, '0');
+  const d = String(parts.day).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function priorityKey(priority) {
@@ -107,6 +147,8 @@ export default function Dashboard() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('in_progress');
   const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [dueDateDraft, setDueDateDraft] = useState('');
+  const [isSavingDueDate, setIsSavingDueDate] = useState(false);
   const friends = friendships.map(f => ({
     id: f.friend_id || f.id,
     name: f.friend_name || f.name || 'Friend',
@@ -188,6 +230,10 @@ export default function Dashboard() {
     }
     setSelectedStatus('in_progress');
   }, [selectedTask?.id, selectedTask?.status]);
+
+  useEffect(() => {
+    setDueDateDraft(toDateInputValue(selectedTask?.due_date));
+  }, [selectedTask?.id, selectedTask?.due_date]);
 
   useEffect(() => {
     if (active !== "Task" || !selectedTaskId || !middlePanelRef.current) {
@@ -356,6 +402,30 @@ export default function Dashboard() {
       setSubtaskMessage(error.message || 'Could not update status.');
     }
     setIsSavingStatus(false);
+  };
+
+  const handleSaveDueDate = async () => {
+    if (!selectedTask?.id) return;
+
+    setIsSavingDueDate(true);
+    setSubtaskMessage('');
+
+    const nextDueDate = dueDateDraft || null;
+    const { error } = await supabase
+      .from('tasks')
+      .update({ due_date: nextDueDate })
+      .eq('id', selectedTask.id);
+
+    if (!error) {
+      await refresh();
+      setSubtaskMessageType('success');
+      setSubtaskMessage(nextDueDate ? 'Due date updated.' : 'Due date cleared.');
+    } else {
+      setSubtaskMessageType('error');
+      setSubtaskMessage(error.message || 'Could not update due date.');
+    }
+
+    setIsSavingDueDate(false);
   };
 
   const persistNotes = async (nextNotes) => {
@@ -617,7 +687,7 @@ export default function Dashboard() {
                     <div>
                       <h1 className="dashboard-title">{selectedTask.title || 'Untitled task'}</h1>
                       <p className="dashboard-text">
-                        {formatStatusLabel(selectedTask.status)} · {selectedTask.due_date ? `Due ${new Date(selectedTask.due_date).toLocaleDateString()}` : 'No due date'}
+                        {formatStatusLabel(selectedTask.status)} · {selectedTask.due_date ? `Due ${formatDueDateFull(selectedTask.due_date)}` : 'No due date'}
                       </p>
                     </div>
                     {!isSessionActive ? (
@@ -694,6 +764,38 @@ export default function Dashboard() {
                       >
                         <CheckCircle2 className="w-4 h-4" />
                         Completed
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="dashboard-task-due-block">
+                    <div className="dashboard-task-section-header">
+                      <h3 className="dashboard-task-section-title">Due Date</h3>
+                      {isSavingDueDate && <span className="dashboard-inline-saving">Saving...</span>}
+                    </div>
+                    <div className="dashboard-due-date-controls">
+                      <input
+                        type="date"
+                        className="dashboard-due-date-input"
+                        value={dueDateDraft}
+                        onChange={(e) => setDueDateDraft(e.target.value)}
+                        disabled={isSavingDueDate}
+                      />
+                      <button
+                        type="button"
+                        className="dashboard-due-date-btn"
+                        onClick={handleSaveDueDate}
+                        disabled={isSavingDueDate}
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="dashboard-due-date-btn dashboard-due-date-btn--secondary"
+                        onClick={() => setDueDateDraft('')}
+                        disabled={isSavingDueDate}
+                      >
+                        Clear
                       </button>
                     </div>
                   </div>

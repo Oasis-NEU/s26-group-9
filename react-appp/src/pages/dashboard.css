@@ -352,6 +352,64 @@
     gap: 8px;
 }
 
+.dashboard-task-due-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dashboard-due-date-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.dashboard-due-date-input {
+    border: 1px solid #ccb8a6;
+    border-radius: 10px;
+    background: #fcf8f3;
+    color: #6f5a49;
+    font-size: 0.95rem;
+    padding: 9px 12px;
+    font-family: inherit;
+}
+
+.dashboard-due-date-input:focus {
+    outline: none;
+    border-color: #99836f;
+}
+
+.dashboard-due-date-btn {
+    border: none;
+    border-radius: 999px;
+    background: #99836f;
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.dashboard-due-date-btn:hover:not(:disabled) {
+    background: #746455;
+}
+
+.dashboard-due-date-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.dashboard-due-date-btn--secondary {
+    background: #e6ddd4;
+    color: #7d634f;
+}
+
+.dashboard-due-date-btn--secondary:hover:not(:disabled) {
+    background: #d9cec3;
+}
+
 .dashboard-status-selector {
     display: flex;
     gap: 10px;
