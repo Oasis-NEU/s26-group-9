@@ -251,6 +251,69 @@
     padding-bottom: 16px;
 }
 
+.dashboard-task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.dashboard-session-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.dashboard-session-btn--start {
+    background-color: #cd8b5c;
+    color: white;
+}
+
+.dashboard-session-btn--start:hover {
+    background-color: #b57a4d;
+}
+
+.dashboard-session-btn--stop {
+    background-color: #8b6f5c;
+    color: white;
+}
+
+.dashboard-session-btn--stop:hover {
+    background-color: #6d5445;
+}
+
+.dashboard-session-active {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.dashboard-session-timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #eae0d5;
+    color: #5d4838;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+        font-family: 'Afacad', sans-serif;
+}
+
+.dashboard-session-time {
+    color: #cd8b5c;
+}
+
 .dashboard-task-stats-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -667,6 +730,59 @@
 .dashboard-task-notes-remove-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.dashboard-task-sessions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dashboard-sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dashboard-session-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #f7f1ea;
+    border: 1px solid #ccb8a6;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.dashboard-session-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #cd8b5c;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.dashboard-session-details {
+    flex: 1;
+}
+
+.dashboard-session-task {
+    color: #5d4838;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.dashboard-session-meta {
+    display: flex;
+    gap: 12px;
+    color: #8b6f5c;
+    font-size: 0.85rem;
+}
+
+.dashboard-session-duration {
+    font-weight: 500;
 }
 
 @media (max-width: 768px) {

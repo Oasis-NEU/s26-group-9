@@ -7,7 +7,6 @@ import Login from './pages/log-in.jsx';
 import Signup from './pages/signup.jsx';
 import Dashboard from './pages/dashboard.jsx';
 import AddTaskPage from './pages/AddTaskPage.jsx';
-import Inbox from './pages/inbox.jsx';
 
 function ProtectedRoute({ children }) {
   const [isAuthorized, setIsAuthorized] = useState(null);
@@ -50,14 +49,6 @@ function App() {
             element={(
               <ProtectedRoute>
                 <Dashboard />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/inbox"
-            element={(
-              <ProtectedRoute>
-                <Inbox />
               </ProtectedRoute>
             )}
           />

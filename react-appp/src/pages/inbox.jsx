@@ -61,8 +61,8 @@ export default function Inbox() {
             {/* Header */}
             <div className="inbox-header">
                 <div className="inbox-header-title">
-                    <Bell className="w-7 h-7 text-[#5D4838]" />
-                    <h1 className="text-2xl text-[#5D4838]">Inbox</h1>
+                    <Bell className="w-6 h-6 text-[#5D4838]" />
+                    <h1 className="inbox-title">Inbox</h1>
                     {unreadCount > 0 && (
                         <span className="inbox-unread-badge">
                             {unreadCount}

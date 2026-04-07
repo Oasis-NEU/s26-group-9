@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Bell, Play, Square, Clock } from 'lucide-react';
 import ActivityPanel from "./activitypanel";
 import { Overview } from "./overview";
+import Inbox from "./inbox";
 import useAppData from '../hooks/useAppData';
 import './dashboard.css';
 import { supabase } from '../lib/supabase';
@@ -111,6 +112,10 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [studySessions, setStudySessions] = useState([]);
 
   useEffect(() => {
     async function loadUser() {
@@ -176,6 +181,100 @@ export default function Dashboard() {
 
     return () => clearTimeout(timeoutId);
   }, [subtaskMessage]);
+
+  // Timer effect for study sessions
+  useEffect(() => {
+    let interval = null;
+
+    if (isSessionActive && sessionStartTime) {
+      interval = setInterval(() => {
+        const now = new Date();
+        const diff = Math.floor((now.getTime() - sessionStartTime.getTime()) / 1000);
+        setElapsedSeconds(diff);
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isSessionActive, sessionStartTime]);
+
+  const formatElapsedTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
+    }
+  };
+
+  const formatSessionDuration = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
+  };
+
+  const handleStartSession = () => {
+    const now = new Date();
+    setSessionStartTime(now);
+    setIsSessionActive(true);
+    setElapsedSeconds(0);
+  };
+
+  const handleStopSession = async () => {
+    if (sessionStartTime && selectedTask?.id) {
+      const now = new Date();
+      const startTimeStr = sessionStartTime.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      const endTimeStr = now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      const newSession = {
+        task_id: selectedTask.id,
+        duration_mins: Math.floor(elapsedSeconds / 60),
+        started_at: sessionStartTime.toISOString(),
+      };
+
+      const sessionLog = {
+        task: selectedTask.title,
+        time: `${startTimeStr}-${endTimeStr}`,
+        duration: formatSessionDuration(elapsedSeconds),
+      };
+
+      setStudySessions([sessionLog, ...studySessions]);
+
+      // Try to save to database if user exists
+      const userId = user?.id || (await supabase.auth.getUser()).data?.user?.id;
+      if (userId) {
+        await supabase.from('sessions').insert({
+          user_id: userId,
+          ...newSession
+        });
+      }
+
+      await refresh();
+    }
+
+    setIsSessionActive(false);
+    setSessionStartTime(null);
+    setElapsedSeconds(0);
+  };
 
   const handleAddSubtask = async (e) => {
     e.preventDefault();
@@ -410,7 +509,7 @@ export default function Dashboard() {
           <button
             type="button"
             className="dashboard-topbar-inbox"
-            onClick={() => navigate('/inbox')}
+            onClick={() => setActive("Inbox")}
             title="Inbox"
           >
             <Bell className="w-5 h-5" />
@@ -491,10 +590,37 @@ export default function Dashboard() {
             <div className="dashboard-task-detail">
               {selectedTask ? (
                 <>
-                  <h1 className="dashboard-title">{selectedTask.title || 'Untitled task'}</h1>
-                  <p className="dashboard-text">
-                    {String(selectedTask.status || 'In progress').replace(/[_-]/g, ' ')} · {selectedTask.due_date ? `Due ${new Date(selectedTask.due_date).toLocaleDateString()}` : 'No due date'}
-                  </p>
+                  <div className="dashboard-task-header">
+                    <div>
+                      <h1 className="dashboard-title">{selectedTask.title || 'Untitled task'}</h1>
+                      <p className="dashboard-text">
+                        {String(selectedTask.status || 'In progress').replace(/[_-]/g, ' ')} · {selectedTask.due_date ? `Due ${new Date(selectedTask.due_date).toLocaleDateString()}` : 'No due date'}
+                      </p>
+                    </div>
+                    {!isSessionActive ? (
+                      <button
+                        onClick={handleStartSession}
+                        className="dashboard-session-btn dashboard-session-btn--start"
+                      >
+                        <Play className="w-4 h-4" />
+                        Start Session
+                      </button>
+                    ) : (
+                      <div className="dashboard-session-active">
+                        <div className="dashboard-session-timer">
+                          <Clock className="w-4 h-4" />
+                          <span className="dashboard-session-time">{formatElapsedTime(elapsedSeconds)}</span>
+                        </div>
+                        <button
+                          onClick={handleStopSession}
+                          className="dashboard-session-btn dashboard-session-btn--stop"
+                        >
+                          <Square className="w-4 h-4" />
+                          Stop
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   <div className="dashboard-task-stats-grid">
                     <div className="dashboard-task-stat-card">
@@ -632,6 +758,26 @@ export default function Dashboard() {
                     </div>
                   </div>
 
+                  {studySessions.length > 0 && (
+                    <div className="dashboard-task-sessions">
+                      <h3 className="dashboard-task-section-title">Session Log</h3>
+                      <div className="dashboard-sessions-list">
+                        {studySessions.map((session, index) => (
+                          <div key={index} className="dashboard-session-item">
+                            <div className="dashboard-session-dot"></div>
+                            <div className="dashboard-session-details">
+                              <div className="dashboard-session-task">{session.task}</div>
+                              <div className="dashboard-session-meta">
+                                <span>{session.time}</span>
+                                <span className="dashboard-session-duration">{session.duration}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {subtaskMessage && (
                     <div className={`dashboard-subtask-toast dashboard-subtask-toast--${subtaskMessageType}`}>
                       {subtaskMessage}
@@ -655,6 +801,10 @@ export default function Dashboard() {
                 }
               }}
             />
+          )}
+
+          {active === "Inbox" && (
+            <Inbox />
           )}
         </main>
 
