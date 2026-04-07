@@ -56,7 +56,24 @@ button:hover {
 
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus,
+button:focus-visible,
+button:active,
+a:focus,
+a:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 @media (prefers-color-scheme: light) {

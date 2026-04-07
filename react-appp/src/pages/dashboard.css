@@ -770,6 +770,39 @@
     background-color: #8a7664;
 }
 
+.dashboard-topbar-inbox {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 5px;
+    transition: opacity 0.2s ease;
+}
+
+.dashboard-topbar-inbox:hover {
+    opacity: 0.8;
+}
+
+.dashboard-inbox-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #cd8b5c;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
 .dashboard-topbar-name {
     font-size: 0.95rem;
     font-weight: 600;

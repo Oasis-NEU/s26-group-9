@@ -1,0 +1,220 @@
+.inbox-container {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+}
+
+.inbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.inbox-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.inbox-unread-badge {
+  background-color: #cd8b5c;
+  color: white;
+  font-size: 0.875rem;
+  padding: 0.625rem 0.625rem;
+  border-radius: 9999px;
+}
+
+.inbox-mark-all-read {
+  color: #8b6f5c;
+  font-size: 0.875rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.inbox-mark-all-read:hover {
+  color: #5d4838;
+}
+
+.inbox-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #eae0d5;
+  padding-bottom: 0.5rem;
+}
+
+.inbox-filter-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  border: none;
+  background: none;
+  color: #8b6f5c;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.inbox-filter-btn:hover {
+  background-color: #eae0d5;
+}
+
+.inbox-filter-btn.active {
+  background-color: #9f7e69;
+  color: white;
+}
+
+.inbox-notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.inbox-empty {
+  text-align: center;
+  padding: 3rem 0;
+  color: #8b6f5c;
+}
+
+.inbox-notification {
+  border: 1px solid #eae0d5;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.inbox-notification.unread {
+  background-color: #fbf9f7;
+  border-left: 4px solid #cd8b5c;
+}
+
+.inbox-notification.read {
+  background-color: white;
+  border-left: 4px solid transparent;
+}
+
+.inbox-notification-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.inbox-icon {
+  color: white;
+  padding: 0.625rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.inbox-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background-color: #c8b8a8;
+  color: #5d4838;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.inbox-message {
+  flex: 1;
+  min-width: 0;
+}
+
+.inbox-message-text {
+  color: #5d4838;
+  line-height: 1.5;
+}
+
+.inbox-message-time {
+  color: #8b6f5c;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.inbox-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.inbox-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.inbox-btn--accept {
+  background-color: #9f7e69;
+  color: white;
+}
+
+.inbox-btn--accept:hover {
+  background-color: #8b6f5c;
+}
+
+.inbox-btn--decline {
+  background-color: #eae0d5;
+  color: #5d4838;
+}
+
+.inbox-btn--decline:hover {
+  background-color: #c8b8a8;
+}
+
+.inbox-delete-btn {
+  color: #8b6f5c;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.inbox-delete-btn:hover {
+  color: #5d4838;
+}
+
+@media (max-width: 768px) {
+  .inbox-container {
+    padding: 1rem;
+  }
+
+  .inbox-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .inbox-filters {
+    flex-wrap: wrap;
+  }
+
+  .inbox-notification-content {
+    flex-wrap: wrap;
+  }
+
+  .inbox-message {
+    width: 100%;
+  }
+}

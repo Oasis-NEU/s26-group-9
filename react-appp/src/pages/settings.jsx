@@ -17,6 +17,8 @@ export default function Settings({ onProfileUpdated }) {
     const [tempName, setTempName] = useState("");
     const [tempEmail, setTempEmail] = useState("");
     const [deadlineReminders, setDeadlineReminders] = useState(true);
+    const [nudgeNotifications, setNudgeNotifications] = useState(true);
+    const [friendRequestNotifications, setFriendRequestNotifications] = useState(true);
     const [userId, setUserId] = useState(null);
     const [statusMessage, setStatusMessage] = useState("");
     const [statusType, setStatusType] = useState("success");
@@ -44,6 +46,8 @@ export default function Settings({ onProfileUpdated }) {
 
             if (data) {
                 setDeadlineReminders(data.deadline_reminders);
+                setNudgeNotifications(data.nudge_notifications);
+                setFriendRequestNotifications(data.friend_request_notifications);
             }
         }
         loadSettings();
@@ -60,6 +64,38 @@ export default function Settings({ onProfileUpdated }) {
             .upsert({
                 user_id: authData.user.id,
                 deadline_reminders: val,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+
+        console.log('saved:', val, 'data:', data, 'error:', error);
+    };
+
+    const handleToggleNudgeNotifications = async (val) => {
+        setNudgeNotifications(val);
+        const { data: authData } = await supabase.auth.getUser();
+        if (!authData?.user) return;
+
+        const { data, error } = await supabase
+            .from('notification_settings')
+            .upsert({
+                user_id: authData.user.id,
+                nudge_notifications: val,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+
+        console.log('saved:', val, 'data:', data, 'error:', error);
+    };
+
+    const handleToggleFriendRequestNotifications = async (val) => {
+        setFriendRequestNotifications(val);
+        const { data: authData } = await supabase.auth.getUser();
+        if (!authData?.user) return;
+
+        const { data, error } = await supabase
+            .from('notification_settings')
+            .upsert({
+                user_id: authData.user.id,
+                friend_request_notifications: val,
                 updated_at: new Date().toISOString()
             }, { onConflict: 'user_id' });
 
@@ -174,6 +210,38 @@ export default function Settings({ onProfileUpdated }) {
                                     type="checkbox"
                                     checked={deadlineReminders}
                                     onChange={e => handleToggleDeadlineReminders(e.target.checked)}
+
+                                />
+                                <span className="settings-toggle-slider" />
+                            </label>
+                        </div>
+
+                        <div className="settings-row">
+                            <div>
+                                <div className="settings-row-label">Nudge notifications</div>
+                                <div className="settings-row-value">Get notified when friends nudge you</div>
+                            </div>
+                            <label className="settings-toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={nudgeNotifications}
+                                    onChange={e => handleToggleNudgeNotifications(e.target.checked)}
+
+                                />
+                                <span className="settings-toggle-slider" />
+                            </label>
+                        </div>
+
+                        <div className="settings-row">
+                            <div>
+                                <div className="settings-row-label">Friend requests</div>
+                                <div className="settings-row-value">Get notified of new friend requests</div>
+                            </div>
+                            <label className="settings-toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={friendRequestNotifications}
+                                    onChange={e => handleToggleFriendRequestNotifications(e.target.checked)}
 
                                 />
                                 <span className="settings-toggle-slider" />

@@ -54,11 +54,21 @@ create table subtasks (
   done boolean default false
 );
 
+create table if not exists public.notification_settings (
+    user_id uuid primary key references auth.users (id) on delete cascade,
+    deadline_reminders boolean not null default true,
+    nudge_notifications boolean not null default true,
+    friend_request_notifications boolean not null default true,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
 alter table public.profiles enable row level security;
 alter table public.tasks enable row level security;
 alter table public.subtasks enable row level security;
 alter table public.sessions enable row level security;
 alter table public.friendships enable row level security;
+alter table public.notification_settings enable row level security;
 
 create policy if not exists "profiles_select_own" on public.profiles
 for select using (auth.uid() = id);
@@ -89,3 +99,12 @@ for update using (auth.uid() = user_id);
 
 create policy if not exists "friendships_owner_delete" on public.friendships
 for delete using (auth.uid() = user_id);
+
+create policy if not exists "notification_settings_select_own" on public.notification_settings
+for select using (auth.uid() = user_id);
+
+create policy if not exists "notification_settings_update_own" on public.notification_settings
+for update using (auth.uid() = user_id);
+
+create policy if not exists "notification_settings_insert_own" on public.notification_settings
+for insert with check (auth.uid() = user_id);

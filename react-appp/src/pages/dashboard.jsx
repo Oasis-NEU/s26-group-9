@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
+import { Bell } from 'lucide-react';
 import ActivityPanel from "./activitypanel";
 import { Overview } from "./overview";
 import useAppData from '../hooks/useAppData';
@@ -91,6 +92,7 @@ export default function Dashboard() {
   const [active, setActive] = useState("Task");
   const { user, tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const middlePanelRef = useRef(null);
   const [newSubtaskName, setNewSubtaskName] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [subtaskMessage, setSubtaskMessage] = useState("");
@@ -108,6 +110,7 @@ export default function Dashboard() {
   }));
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     async function loadUser() {
@@ -150,6 +153,14 @@ export default function Dashboard() {
       setSelectedPriority(priorityKey(selectedTask.priority));
     }
   }, [selectedTask?.id, selectedTask?.priority]);
+
+  useEffect(() => {
+    if (active !== "Task" || !selectedTaskId || !middlePanelRef.current) {
+      return;
+    }
+
+    middlePanelRef.current.scrollTo({ top: 0, behavior: 'auto' });
+  }, [active, selectedTaskId]);
 
   useEffect(() => {
     setNoteItems(parseTaskNotes(rawTaskNotes));
@@ -398,6 +409,17 @@ export default function Dashboard() {
           {userName && <span className="dashboard-topbar-name">{userName}</span>}
           <button
             type="button"
+            className="dashboard-topbar-inbox"
+            onClick={() => navigate('/inbox')}
+            title="Inbox"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadNotifications > 0 && (
+              <span className="dashboard-inbox-badge">{unreadNotifications}</span>
+            )}
+          </button>
+          <button
+            type="button"
             className="dashboard-topbar-settings"
             onClick={() => setActive("Settings")}
           >
@@ -460,7 +482,7 @@ export default function Dashboard() {
           </section>
         </aside>
 
-        <main className={`dashboard-content ${active === "Overview" ? "dashboard-content--full" : ""}`}>
+        <main ref={middlePanelRef} className={`dashboard-content ${active === "Overview" ? "dashboard-content--full" : ""}`}>
           {active === "Overview" && (
             <Overview tasks={tasks} sessions={sessions} userName={userName} />
           )}
