@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Bell, Play, Square, Clock } from 'lucide-react';
 import ActivityPanel from "./activitypanel";
@@ -115,7 +115,27 @@ export default function Dashboard() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [studySessions, setStudySessions] = useState([]);
+  const [optimisticSessions, setOptimisticSessions] = useState([]);
+
+  const panelSessions = useMemo(() => {
+    const allSessions = [...optimisticSessions, ...(Array.isArray(sessions) ? sessions : [])];
+    const seen = new Set();
+
+    return allSessions.filter((session) => {
+      const key = [
+        session?.task_id || session?.taskId || '',
+        session?.started_at || session?.startedAt || '',
+        session?.duration_mins ?? session?.duration_minutes ?? session?.minutes ?? '',
+      ].join('|');
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+  }, [optimisticSessions, sessions]);
 
   useEffect(() => {
     async function loadUser() {
@@ -213,17 +233,6 @@ export default function Dashboard() {
     }
   };
 
-  const formatSessionDuration = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else {
-      return `${minutes}m`;
-    }
-  };
-
   const handleStartSession = () => {
     const now = new Date();
     setSessionStartTime(now);
@@ -233,39 +242,40 @@ export default function Dashboard() {
 
   const handleStopSession = async () => {
     if (sessionStartTime && selectedTask?.id) {
-      const now = new Date();
-      const startTimeStr = sessionStartTime.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-      const endTimeStr = now.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-
+      const durationMins = Math.max(1, Math.floor(elapsedSeconds / 60));
       const newSession = {
         task_id: selectedTask.id,
-        duration_mins: Math.floor(elapsedSeconds / 60),
+        duration_mins: durationMins,
         started_at: sessionStartTime.toISOString(),
       };
-
-      const sessionLog = {
-        task: selectedTask.title,
-        time: `${startTimeStr}-${endTimeStr}`,
-        duration: formatSessionDuration(elapsedSeconds),
-      };
-
-      setStudySessions([sessionLog, ...studySessions]);
 
       // Try to save to database if user exists
       const userId = user?.id || (await supabase.auth.getUser()).data?.user?.id;
       if (userId) {
-        await supabase.from('sessions').insert({
+        const optimisticId = `local-${Date.now()}`;
+        setOptimisticSessions((prev) => [{ id: optimisticId, user_id: userId, ...newSession }, ...prev]);
+
+        // Support both schemas: study_sessions(start_time, duration) and sessions(started_at, duration_mins).
+        let insertResult = await supabase.from('study_sessions').insert({
           user_id: userId,
-          ...newSession
+          task_id: newSession.task_id,
+          start_time: newSession.started_at,
+          duration: newSession.duration_mins,
         });
+
+        if (insertResult.error) {
+          insertResult = await supabase.from('sessions').insert({
+            user_id: userId,
+            ...newSession
+          });
+        }
+
+        if (insertResult.error) {
+          setSubtaskMessageType('error');
+          setSubtaskMessage(insertResult.error.message || 'Could not save session.');
+        }
+
+        setOptimisticSessions((prev) => prev.filter((session) => session.id !== optimisticId));
       }
 
       await refresh();
@@ -758,26 +768,6 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {studySessions.length > 0 && (
-                    <div className="dashboard-task-sessions">
-                      <h3 className="dashboard-task-section-title">Session Log</h3>
-                      <div className="dashboard-sessions-list">
-                        {studySessions.map((session, index) => (
-                          <div key={index} className="dashboard-session-item">
-                            <div className="dashboard-session-dot"></div>
-                            <div className="dashboard-session-details">
-                              <div className="dashboard-session-task">{session.task}</div>
-                              <div className="dashboard-session-meta">
-                                <span>{session.time}</span>
-                                <span className="dashboard-session-duration">{session.duration}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {subtaskMessage && (
                     <div className={`dashboard-subtask-toast dashboard-subtask-toast--${subtaskMessageType}`}>
                       {subtaskMessage}
@@ -807,11 +797,22 @@ export default function Dashboard() {
             <Inbox />
           )}
         </main>
-
-
-        <aside className="dashboard-right-sidebar">
-          <ActivityPanel activity={activity} sessions={sessions} tasks={tasks} title="Time Spent Activity" />
-        </aside>
+        {active === "Task" && (
+          <aside className="dashboard-right-sidebar">
+            <ActivityPanel
+              mode="task"
+              sessions={panelSessions}
+              tasks={tasks}
+              selectedTask={selectedTask}
+              title="Time Spent"
+            />
+          </aside>
+        )}
+        {active !== "Overview" && active !== "Task" && (
+          <aside className="dashboard-right-sidebar">
+            <ActivityPanel activity={activity} sessions={panelSessions} tasks={tasks} title="Time Spent Activity" />
+          </aside>
+        )}
       </div>
     </div>
   );

@@ -15,24 +15,101 @@
     width: 100%;
     max-width: none;
     min-height: 100%;
-    padding: 10px 22px 0;
+    padding: 24px 24px 16px;
     box-sizing: border-box;
 }
 
 .overview-header {
-    margin-bottom: 18px;
+    margin-bottom: 20px;
 }
 
 .overview-header h1 {
     margin: 0 0 6px;
     color: #5d4838;
-    font-size: 1.8rem;
+    font-size: 2rem;
 }
 
 .overview-header p {
     margin: 0;
     color: #8b6f5c;
-    font-size: 0.9rem;
+    font-size: 1rem;
+}
+
+.overview-status-card {
+    background: #faf8f5;
+    border: 2px solid #e5ddd1;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 18px;
+}
+
+.overview-status-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.overview-status-body {
+    flex: 1;
+}
+
+.overview-status-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #5d4838;
+}
+
+.overview-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.overview-status-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.overview-status-form label {
+    color: #8b6f5c;
+    font-size: 0.86rem;
+}
+
+.overview-status-form select,
+.overview-status-form input {
+    border: 1px solid #c8b8a8;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: inherit;
+    color: #5d4838;
+    background: #fff;
+}
+
+.overview-icon-btn {
+    border: 1px solid #c8b8a8;
+    border-radius: 8px;
+    background: #fff;
+    color: #8b6f5c;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.overview-icon-btn--save {
+    background: #cd8b5c;
+    color: #fff;
+    border-color: #cd8b5c;
+}
+
+.overview-status-actions {
+    display: flex;
+    gap: 8px;
 }
 
 .overview-stats-grid {
@@ -50,7 +127,7 @@
 }
 
 .overview-stat-value {
-    font-size: 1.9rem;
+    font-size: 2rem;
     color: #8b6f5c;
 }
 
@@ -93,7 +170,7 @@
 .overview-section-title {
     margin: 0 0 10px;
     color: #5d4838;
-    font-size: 0.86rem;
+    font-size: 0.95rem;
     letter-spacing: 0.06em;
 }
 
@@ -117,13 +194,13 @@
 .overview-deadline-card h4 {
     margin: 0 0 6px;
     color: #5d4838;
-    font-size: 0.98rem;
+    font-size: 1.03rem;
 }
 
 .overview-deadline-card p {
     margin: 0;
     color: #8b6f5c;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
 }
 
 .overview-days-badge {
@@ -140,6 +217,7 @@
     background: #eae0d5;
     padding: 24px 20px;
     overflow: auto;
+    border-left: 1px solid #d6c7b6;
 }
 
 .overview-panel-block {
@@ -155,7 +233,8 @@
 
 .overview-chart-card,
 .overview-week-card,
-.overview-streak-card {
+.overview-streak-card,
+.overview-focus-hint {
     background: #fff;
     border-radius: 12px;
     padding: 14px;
@@ -219,6 +298,7 @@
 
 .overview-streak-card {
     text-align: center;
+    margin-bottom: 12px;
 }
 
 .overview-streak-count {
@@ -250,6 +330,14 @@
     background: #cd8b5c;
 }
 
+.overview-focus-hint {
+    color: #5d4838;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.95rem;
+}
+
 @media (max-width: 1080px) {
     .overview-layout {
         flex-direction: column;
@@ -261,5 +349,9 @@
 
     .overview-stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .overview-content {
+        padding: 20px;
     }
 }

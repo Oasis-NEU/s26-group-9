@@ -3,6 +3,19 @@ import { supabase } from '../lib/supabase';
 
 const activityColors = ['#DCC9AE', '#BFA88D', '#8A7664', '#746455'];
 
+function normalizeSessionRow(row) {
+    const duration = Number.parseInt(
+        row?.duration_mins ?? row?.duration_minutes ?? row?.duration ?? row?.minutes ?? 0,
+        10
+    );
+
+    return {
+        ...row,
+        started_at: row?.started_at ?? row?.start_time ?? null,
+        duration_mins: Number.isFinite(duration) ? duration : 0,
+    };
+}
+
 function isMissingTableError(error) {
     const code = String(error?.code || '');
     const message = String(error?.message || '').toLowerCase();
@@ -212,7 +225,11 @@ export default function useAppData() {
         setProfile(profileResult?.data || null);
         setTasks(Array.isArray(tasksResult?.data) ? tasksResult.data : []);
         setSubtasks(Array.isArray(resolvedSubtasksResult?.data) ? resolvedSubtasksResult.data : []);
-        setSessions(Array.isArray(sessionsResult?.data) ? sessionsResult.data : []);
+        setSessions(
+            Array.isArray(sessionsResult?.data)
+                ? sessionsResult.data.map(normalizeSessionRow)
+                : []
+        );
         setFriendships(Array.isArray(friendshipsResult?.data) ? friendshipsResult.data : []);
         setIsLoading(false);
     }, []);
@@ -235,7 +252,7 @@ export default function useAppData() {
             }
 
             const minutes = Number.parseInt(
-                session?.duration_mins ?? session?.duration_minutes ?? session?.minutes,
+                session?.duration_mins ?? session?.duration_minutes ?? session?.duration ?? session?.minutes,
                 10
             );
             const safeMinutes = Number.isFinite(minutes) && minutes > 0 ? minutes : 0;
