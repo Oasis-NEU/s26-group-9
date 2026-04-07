@@ -4,8 +4,10 @@
     background-color: #f8f7f6;
     color: #746455;
     position: relative;
-    min-height: calc(100vh - 60px);
+    min-height: 0;
+    height: calc(100vh - 60px);
     align-items: stretch;
+    overflow: hidden;
 }
 
 /* .dashboard-productivity-button {
@@ -67,7 +69,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    overflow-y: auto;
+    overflow: hidden;
 }
 
 .dashboard-task-rail-title {
@@ -215,10 +217,15 @@
 
 .dashboard-content {
     flex: 1;
-    padding: 40px;
+    min-height: 0;
+    max-height: 100%;
+    padding: 40px 40px 88px;
     align-self: stretch;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .dashboard-content--full {
@@ -241,6 +248,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    padding-bottom: 16px;
 }
 
 .dashboard-task-stats-grid {
@@ -267,6 +275,36 @@
     margin: 6px 0 0;
     font-size: 0.9rem;
     color: #8a7664;
+}
+
+.dashboard-task-meta-chips {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.dashboard-task-chip {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #e6ddd4;
+    color: #7d634f;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.dashboard-task-chip--high {
+    background: #cd8b5c;
+    color: #ffffff;
+}
+
+.dashboard-task-chip--medium {
+    background: #b8a897;
+    color: #ffffff;
+}
+
+.dashboard-task-chip--low {
+    background: #6f5d50;
+    color: #ffffff;
 }
 
 .dashboard-task-section-title {
@@ -391,7 +429,7 @@
 
 .dashboard-add-subtask-btn {
     padding: 10px 16px;
-    background: #605d59;
+    background: #99836F;
     color: #ffffff;
     border: none;
     border-radius: 10px;
@@ -402,7 +440,7 @@
 }
 
 .dashboard-add-subtask-btn:hover:not(:disabled) {
-    background: #52504c;
+    background: #746455;
 }
 
 .dashboard-add-subtask-btn:disabled {
@@ -530,9 +568,112 @@
     cursor: not-allowed;
 }
 
+.dashboard-task-notes-card {
+    border: 1px solid #dac9ba;
+    border-radius: 14px;
+    padding: 14px;
+    background: #fcf8f3;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dashboard-task-notes-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dashboard-task-notes-input {
+    width: 100%;
+    min-height: 92px;
+    border: 1px solid #ccb8a6;
+    border-radius: 10px;
+    background: #fffdf9;
+    color: #6f5a49;
+    font-size: 1rem;
+    line-height: 1.5;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.dashboard-task-notes-input:focus {
+    outline: none;
+    border-color: #99836f;
+}
+
+.dashboard-task-notes-save-btn {
+    align-self: flex-start;
+    border: none;
+    border-radius: 10px;
+    background: #99836F;
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.dashboard-task-notes-save-btn:hover:not(:disabled) {
+    background: #746455;
+}
+
+.dashboard-task-notes-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.dashboard-task-notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dashboard-task-notes-item {
+    border: 1px solid #dac9ba;
+    border-radius: 12px;
+    background: #fffdf9;
+    padding: 12px 14px;
+    color: #6f5a49;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.dashboard-task-notes-item--empty {
+    justify-content: flex-start;
+    color: #8d7c6f;
+}
+
+.dashboard-task-notes-remove-btn {
+    border: none;
+    background: transparent;
+    color: #a7544a;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.dashboard-task-notes-remove-btn:hover:not(:disabled) {
+    text-decoration: underline;
+}
+
+.dashboard-task-notes-remove-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
     .dashboard-page {
         flex-direction: column;
+        height: auto;
+        overflow: visible;
     }
 
     .dashboard-sidebar {
@@ -541,6 +682,7 @@
 
     .dashboard-content {
         padding: 24px;
+        overflow: visible;
     }
 
     .dashboard-task-stats-grid {
@@ -558,6 +700,7 @@
     justify-content: flex-start;
     padding: 24px 12px;
     border-left: 1px solid #D6C7B6;
+    overflow: hidden;
 }
 
 .dashboard-right-title {
@@ -569,9 +712,11 @@
 
 .dashboard-wrapper {
     width: 100vw;
+    height: 100vh;
     margin-left: calc(50% - 50vw);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .dashboard-topbar {

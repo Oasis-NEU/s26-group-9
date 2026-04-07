@@ -30,6 +30,16 @@ function priorityKey(priority) {
   return 'none';
 }
 
+function formatStatusLabel(status) {
+  const raw = String(status || 'in_progress').toLowerCase().replace(/[_-]+/g, ' ');
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+function formatPriorityLabel(priority) {
+  const p = priorityKey(priority);
+  return p === 'none' ? 'No priority' : `${p.charAt(0).toUpperCase() + p.slice(1)} priority`;
+}
+
 function toInitials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '??';
@@ -48,6 +58,35 @@ function isSubtaskComplete(subtask) {
   return status === 'done' || status === 'completed';
 }
 
+function parseTaskNotes(value) {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || '').trim()).filter(Boolean);
+  }
+
+  const text = String(value).trim();
+  if (!text) return [];
+
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item || '').trim()).filter(Boolean);
+    }
+  } catch {
+    // Fallback for legacy plain-text notes.
+  }
+
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function serializeTaskNotes(notes) {
+  return JSON.stringify(notes);
+}
+
 export default function Dashboard() {
   const [active, setActive] = useState("Task");
   const { user, tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
@@ -57,6 +96,9 @@ export default function Dashboard() {
   const [subtaskMessage, setSubtaskMessage] = useState("");
   const [subtaskMessageType, setSubtaskMessageType] = useState("success");
   const [subtaskActionId, setSubtaskActionId] = useState(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteItems, setNoteItems] = useState([]);
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [selectedPriority, setSelectedPriority] = useState("medium");
   const [isSavingPriority, setIsSavingPriority] = useState(false);
   const friends = friendships.map(f => ({
@@ -100,12 +142,19 @@ export default function Dashboard() {
   const daysLeft = dueDate && !Number.isNaN(dueDate.getTime())
     ? Math.max(0, Math.ceil((dueDate - new Date()) / 86400000))
     : null;
+  const taskCategory = selectedTask?.category || selectedTask?.subject || selectedTask?.tag || 'General';
+  const rawTaskNotes = selectedTask?.notes ?? selectedTask?.description ?? "";
 
   useEffect(() => {
     if (selectedTask?.priority) {
       setSelectedPriority(priorityKey(selectedTask.priority));
     }
   }, [selectedTask?.id, selectedTask?.priority]);
+
+  useEffect(() => {
+    setNoteItems(parseTaskNotes(rawTaskNotes));
+    setNoteDraft("");
+  }, [selectedTask?.id, rawTaskNotes]);
 
   useEffect(() => {
     if (!subtaskMessage) return;
@@ -174,6 +223,69 @@ export default function Dashboard() {
       await refresh();
     }
     setIsSavingPriority(false);
+  };
+
+  const persistNotes = async (nextNotes) => {
+    if (!selectedTask?.id) return { error: { message: 'No selected task.' } };
+
+    const payload = serializeTaskNotes(nextNotes);
+    let result = await supabase
+      .from('tasks')
+      .update({ notes: payload })
+      .eq('id', selectedTask.id);
+
+    if (result.error) {
+      result = await supabase
+        .from('tasks')
+        .update({ description: payload })
+        .eq('id', selectedTask.id);
+    }
+
+    return result;
+  };
+
+  const handleAddNote = async () => {
+    const cleaned = noteDraft.trim();
+    if (!cleaned) return;
+
+    setIsSavingNotes(true);
+    setSubtaskMessage("");
+
+    const nextNotes = [...noteItems, cleaned];
+    const result = await persistNotes(nextNotes);
+
+    if (!result.error) {
+      setNoteItems(nextNotes);
+      setNoteDraft("");
+      await refresh();
+      setSubtaskMessageType('success');
+      setSubtaskMessage('Note added.');
+    } else {
+      setSubtaskMessageType('error');
+      setSubtaskMessage(result.error.message || 'Could not add note.');
+    }
+
+    setIsSavingNotes(false);
+  };
+
+  const handleRemoveNote = async (indexToRemove) => {
+    setIsSavingNotes(true);
+    setSubtaskMessage("");
+
+    const nextNotes = noteItems.filter((_, index) => index !== indexToRemove);
+    const result = await persistNotes(nextNotes);
+
+    if (!result.error) {
+      setNoteItems(nextNotes);
+      await refresh();
+      setSubtaskMessageType('success');
+      setSubtaskMessage('Note removed.');
+    } else {
+      setSubtaskMessageType('error');
+      setSubtaskMessage(result.error.message || 'Could not remove note.');
+    }
+
+    setIsSavingNotes(false);
   };
 
   const handleToggleSubtaskComplete = async (subtask) => {
@@ -381,6 +493,14 @@ export default function Dashboard() {
                     </div>
                   </div>
 
+                  <div className="dashboard-task-meta-chips">
+                    <span className="dashboard-task-chip">{formatStatusLabel(selectedTask.status)}</span>
+                    <span className={`dashboard-task-chip dashboard-task-chip--${priorityKey(selectedTask.priority)}`}>
+                      {formatPriorityLabel(selectedTask.priority)}
+                    </span>
+                    <span className="dashboard-task-chip">{taskCategory}</span>
+                  </div>
+
                   <h3 className="dashboard-task-section-title">Subtasks</h3>
                   <form onSubmit={handleAddSubtask} className="dashboard-add-subtask-form">
                     <input
@@ -447,6 +567,47 @@ export default function Dashboard() {
                         {level.charAt(0).toUpperCase() + level.slice(1)}
                       </button>
                     ))}
+                  </div>
+
+                  <h3 className="dashboard-task-section-title">Notes</h3>
+                  <div className="dashboard-task-notes-card">
+                    <div className="dashboard-task-notes-form">
+                      <textarea
+                        className="dashboard-task-notes-input"
+                        value={noteDraft}
+                        onChange={(e) => setNoteDraft(e.target.value)}
+                        placeholder="Add a note..."
+                        rows={2}
+                      />
+                      <button
+                        type="button"
+                        className="dashboard-task-notes-save-btn"
+                        onClick={handleAddNote}
+                        disabled={isSavingNotes}
+                      >
+                        {isSavingNotes ? 'Saving...' : 'Add note'}
+                      </button>
+                    </div>
+
+                    <div className="dashboard-task-notes-list">
+                      {noteItems.length === 0 ? (
+                        <div className="dashboard-task-notes-item dashboard-task-notes-item--empty">No notes yet.</div>
+                      ) : (
+                        noteItems.map((note, index) => (
+                          <div key={`${index}-${note.slice(0, 20)}`} className="dashboard-task-notes-item">
+                            <span>{note}</span>
+                            <button
+                              type="button"
+                              className="dashboard-task-notes-remove-btn"
+                              onClick={() => handleRemoveNote(index)}
+                              disabled={isSavingNotes}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
 
                   {subtaskMessage && (
