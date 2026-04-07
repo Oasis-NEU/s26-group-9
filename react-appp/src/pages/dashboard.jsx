@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Bell, Play, Square, Clock } from 'lucide-react';
+import { Bell, Play, Square, Clock, CheckCircle2 } from 'lucide-react';
 import ActivityPanel from "./activitypanel";
 import { Overview } from "./overview";
 import Inbox from "./inbox";
@@ -33,8 +33,11 @@ function priorityKey(priority) {
 }
 
 function formatStatusLabel(status) {
-  const raw = String(status || 'in_progress').toLowerCase().replace(/[_-]+/g, ' ');
-  return raw.charAt(0).toUpperCase() + raw.slice(1);
+  const clean = String(status || 'in_progress').toLowerCase().replace(/[_-]+/g, ' ');
+  if (clean === 'not started') return 'Not Started';
+  if (clean === 'in progress') return 'In Progress';
+  if (clean === 'completed' || clean === 'done') return 'Completed';
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
 
 function formatPriorityLabel(priority) {
@@ -102,8 +105,8 @@ export default function Dashboard() {
   const [noteDraft, setNoteDraft] = useState("");
   const [noteItems, setNoteItems] = useState([]);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
-  const [selectedPriority, setSelectedPriority] = useState("medium");
-  const [isSavingPriority, setIsSavingPriority] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('in_progress');
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
   const friends = friendships.map(f => ({
     id: f.friend_id || f.id,
     name: f.friend_name || f.name || 'Friend',
@@ -174,10 +177,17 @@ export default function Dashboard() {
   const rawTaskNotes = selectedTask?.notes ?? selectedTask?.description ?? "";
 
   useEffect(() => {
-    if (selectedTask?.priority) {
-      setSelectedPriority(priorityKey(selectedTask.priority));
+    const raw = String(selectedTask?.status || 'in_progress').toLowerCase();
+    if (raw.includes('not') && raw.includes('start')) {
+      setSelectedStatus('not_started');
+      return;
     }
-  }, [selectedTask?.id, selectedTask?.priority]);
+    if (raw === 'completed' || raw === 'done') {
+      setSelectedStatus('completed');
+      return;
+    }
+    setSelectedStatus('in_progress');
+  }, [selectedTask?.id, selectedTask?.status]);
 
   useEffect(() => {
     if (active !== "Task" || !selectedTaskId || !middlePanelRef.current) {
@@ -329,20 +339,23 @@ export default function Dashboard() {
     setIsAddingSubtask(false);
   };
 
-  const handlePriorityChange = async (newPriority) => {
+  const handleStatusChange = async (newStatus) => {
     if (!selectedTask?.id) return;
 
-    setIsSavingPriority(true);
+    setIsSavingStatus(true);
     const { error } = await supabase
       .from('tasks')
-      .update({ priority: newPriority })
+      .update({ status: newStatus })
       .eq('id', selectedTask.id);
 
     if (!error) {
-      setSelectedPriority(newPriority);
+      setSelectedStatus(newStatus);
       await refresh();
+    } else {
+      setSubtaskMessageType('error');
+      setSubtaskMessage(error.message || 'Could not update status.');
     }
-    setIsSavingPriority(false);
+    setIsSavingStatus(false);
   };
 
   const persistNotes = async (nextNotes) => {
@@ -604,7 +617,7 @@ export default function Dashboard() {
                     <div>
                       <h1 className="dashboard-title">{selectedTask.title || 'Untitled task'}</h1>
                       <p className="dashboard-text">
-                        {String(selectedTask.status || 'In progress').replace(/[_-]/g, ' ')} · {selectedTask.due_date ? `Due ${new Date(selectedTask.due_date).toLocaleDateString()}` : 'No due date'}
+                        {formatStatusLabel(selectedTask.status)} · {selectedTask.due_date ? `Due ${new Date(selectedTask.due_date).toLocaleDateString()}` : 'No due date'}
                       </p>
                     </div>
                     {!isSessionActive ? (
@@ -651,12 +664,48 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="dashboard-task-meta-chips">
-                    <span className="dashboard-task-chip">{formatStatusLabel(selectedTask.status)}</span>
-                    <span className={`dashboard-task-chip dashboard-task-chip--${priorityKey(selectedTask.priority)}`}>
-                      {formatPriorityLabel(selectedTask.priority)}
-                    </span>
-                    <span className="dashboard-task-chip">{taskCategory}</span>
+                  <div className="dashboard-task-status-block">
+                    <div className="dashboard-task-section-header">
+                      <h3 className="dashboard-task-section-title">Status</h3>
+                      {isSavingStatus && <span className="dashboard-inline-saving">Saving...</span>}
+                    </div>
+                    <div className="dashboard-status-selector">
+                      <button
+                        type="button"
+                        className={`dashboard-status-btn ${selectedStatus === 'not_started' ? 'active active-not-started' : ''}`}
+                        onClick={() => handleStatusChange('not_started')}
+                        disabled={isSavingStatus}
+                      >
+                        Not Started
+                      </button>
+                      <button
+                        type="button"
+                        className={`dashboard-status-btn ${selectedStatus === 'in_progress' ? 'active active-in-progress' : ''}`}
+                        onClick={() => handleStatusChange('in_progress')}
+                        disabled={isSavingStatus}
+                      >
+                        In Progress
+                      </button>
+                      <button
+                        type="button"
+                        className={`dashboard-status-btn dashboard-status-btn--completed ${selectedStatus === 'completed' ? 'active active-completed' : ''}`}
+                        onClick={() => handleStatusChange('completed')}
+                        disabled={isSavingStatus}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Completed
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="dashboard-task-section-title">Tags</h3>
+                    <div className="dashboard-task-meta-chips">
+                      <span className={`dashboard-task-chip dashboard-task-chip--${priorityKey(selectedTask.priority)}`}>
+                        {formatPriorityLabel(selectedTask.priority)}
+                      </span>
+                      <span className="dashboard-task-chip">{taskCategory}</span>
+                    </div>
                   </div>
 
                   <h3 className="dashboard-task-section-title">Subtasks</h3>
@@ -707,24 +756,6 @@ export default function Dashboard() {
                         </div>
                       ))
                     )}
-                  </div>
-
-                  <div className="dashboard-task-section-header">
-                    <h3 className="dashboard-task-section-title">Priority</h3>
-                    {isSavingPriority && <span className="dashboard-inline-saving">Saving...</span>}
-                  </div>
-                  <div className="dashboard-priority-selector">
-                    {["high", "medium", "low"].map((level) => (
-                      <button
-                        key={level}
-                        type="button"
-                        className={`dashboard-priority-selector-btn dashboard-priority-selector-btn--${level} ${selectedPriority === level ? 'active' : ''}`}
-                        onClick={() => handlePriorityChange(level)}
-                        disabled={isSavingPriority}
-                      >
-                        {level.charAt(0).toUpperCase() + level.slice(1)}
-                      </button>
-                    ))}
                   </div>
 
                   <h3 className="dashboard-task-section-title">Notes</h3>

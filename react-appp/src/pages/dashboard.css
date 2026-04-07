@@ -346,6 +346,64 @@
     flex-wrap: wrap;
 }
 
+.dashboard-task-status-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dashboard-status-selector {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.dashboard-status-btn {
+    border: none;
+    background: #e6ddd4;
+    color: #7d634f;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dashboard-status-btn:hover:not(:disabled) {
+    filter: brightness(0.97);
+}
+
+.dashboard-status-btn.active {
+    color: #ffffff;
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #8b6f5c;
+}
+
+.dashboard-status-btn.active-not-started {
+    background: #c8b8a8;
+}
+
+.dashboard-status-btn.active-in-progress {
+    background: #cd8b5c;
+}
+
+.dashboard-status-btn.active-completed {
+    background: #9f7e69;
+}
+
+.dashboard-status-btn--completed {
+    padding-left: 14px;
+}
+
+.dashboard-status-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .dashboard-task-chip {
     padding: 8px 14px;
     border-radius: 999px;
@@ -560,75 +618,6 @@
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-.dashboard-priority-selector {
-    display: flex;
-    gap: 10px;
-}
-
-.dashboard-priority-selector-btn {
-    flex: 1;
-    padding: 10px 12px;
-    border: 1px solid #ccb8a6;
-    border-radius: 10px;
-    background: #fcf8f3;
-    color: #6f5a49;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s ease;
-}
-
-.dashboard-priority-selector-btn:hover:not(:disabled) {
-    border-color: #8a745f;
-    background: #d8c6b2;
-    color: #5f4c3e;
-}
-
-.dashboard-priority-selector-btn.active {
-    background: #99836f;
-    color: #ffffff;
-    border-color: #99836f;
-}
-
-.dashboard-priority-selector-btn--high.active {
-    background: #c7824f;
-    border-color: #c7824f;
-}
-
-.dashboard-priority-selector-btn--medium.active {
-    background: #978673;
-    border-color: #978673;
-}
-
-.dashboard-priority-selector-btn--low.active {
-    background: #59493d;
-    border-color: #59493d;
-}
-
-.dashboard-priority-selector-btn--high:hover:not(:disabled) {
-    background: #d08d5a;
-    border-color: #d08d5a;
-    color: #ffffff;
-}
-
-.dashboard-priority-selector-btn--medium:hover:not(:disabled) {
-    background: #a99885;
-    border-color: #a99885;
-    color: #ffffff;
-}
-
-.dashboard-priority-selector-btn--low:hover:not(:disabled) {
-    background: #675548;
-    border-color: #675548;
-    color: #ffffff;
-}
-
-.dashboard-priority-selector-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }
 
 .dashboard-task-notes-card {

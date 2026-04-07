@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { Edit2, Check, X } from 'lucide-react';
+import { Edit2 } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faX } from '@fortawesome/free-solid-svg-icons';
 import './overview.css';
 
 function normalizeStatus(status) {
@@ -217,7 +219,7 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
                     <div className="overview-status-card">
                         <div className="overview-status-row">
                             <div className="overview-status-body">
-                                <h3 className="overview-section-title">YOUR STATUS</h3>
+                                <h3 className="overview-status-title">YOUR STATUS</h3>
                                 {!isEditingStatus ? (
                                     <div className="overview-status-display">
                                         <div
@@ -250,16 +252,16 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
                             </div>
 
                             {!isEditingStatus ? (
-                                <button type="button" className="overview-icon-btn" onClick={handleStartEdit}>
+                                <button type="button" className="overview-icon-btn overview-icon-btn--ghost" onClick={handleStartEdit}>
                                     <Edit2 size={16} />
                                 </button>
                             ) : (
                                 <div className="overview-status-actions">
                                     <button type="button" className="overview-icon-btn overview-icon-btn--save" onClick={handleSaveStatus}>
-                                        <Check size={16} />
+                                        <FontAwesomeIcon icon={faCheck} aria-hidden="true" />
                                     </button>
-                                    <button type="button" className="overview-icon-btn" onClick={handleCancelEdit}>
-                                        <X size={16} />
+                                    <button type="button" className="overview-icon-btn overview-icon-btn--cancel" onClick={handleCancelEdit}>
+                                        <FontAwesomeIcon icon={faX} style={{ color: '#8b6f5c' }} aria-hidden="true" />
                                     </button>
                                 </div>
                             )}
