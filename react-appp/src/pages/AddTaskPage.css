@@ -124,6 +124,65 @@
   gap: 10px;
 }
 
+.atp-tag-custom-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.atp-tag-custom-input {
+  flex: 1;
+}
+
+.atp-tag-custom-add-btn {
+  border: none;
+  border-radius: 999px;
+  background: #99836F;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.atp-tag-custom-add-btn:hover {
+  background: #746455;
+}
+
+.atp-selected-tags-row {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.atp-selected-tag-chip {
+  border: none;
+  border-radius: 999px;
+  background: #f0e6dc;
+  color: #746455;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+.atp-selected-tag-chip:hover {
+  background: #e6ddd4;
+}
+
+.atp-selected-tag-remove {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .atp-pill {
   padding: 10px 22px;
   border-radius: 999px;
@@ -137,6 +196,26 @@
   align-items: center;
   gap: 6px;
   font-family: inherit;
+}
+
+.atp-pill--custom {
+  padding-right: 14px;
+}
+
+.atp-custom-tag-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.atp-custom-tag-close:hover {
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .atp-pill:hover {

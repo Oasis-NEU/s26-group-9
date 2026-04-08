@@ -151,6 +151,8 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
   const [priority, setPriority] = useState("High");
   const [status, setStatus] = useState("Not started");
   const [selectedTags, setSelectedTags] = useState(["School"]);
+  const [customTags, setCustomTags] = useState([]);
+  const [newTagDraft, setNewTagDraft] = useState("");
   const [subtasks, setSubtasks] = useState([""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
@@ -161,6 +163,33 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
   };
+
+  const addCustomTag = () => {
+    const cleanTag = newTagDraft.trim();
+    if (!cleanTag) return;
+
+    const existsInDefault = TAGS.some((tag) => tag.toLowerCase() === cleanTag.toLowerCase());
+    const existsInCustom = customTags.some((tag) => tag.toLowerCase() === cleanTag.toLowerCase());
+    if (existsInDefault || existsInCustom) {
+      setNewTagDraft("");
+      return;
+    }
+
+    setCustomTags((prev) => [...prev, cleanTag]);
+    setSelectedTags((prev) => (prev.includes(cleanTag) ? prev : [...prev, cleanTag]));
+    setNewTagDraft("");
+  };
+
+  const removeTagFromSelection = (tagToRemove) => {
+    setSelectedTags((prev) => prev.filter((tag) => tag !== tagToRemove));
+  };
+
+  const removeCustomTag = (tagToRemove) => {
+    setCustomTags((prev) => prev.filter((tag) => tag !== tagToRemove));
+    setSelectedTags((prev) => prev.filter((tag) => tag !== tagToRemove));
+  };
+
+  const availableTags = [...TAGS, ...customTags];
 
   const updateSubtask = (i, val) => {
     setSubtasks(prev => prev.map((s, idx) => idx === i ? val : s));
@@ -221,6 +250,7 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
       priority: String(priority || '').toLowerCase(),
       due_date: parsedDueDate,
       due_time: parsedDueTime,
+      tag: selectedTags[0] || null,
     };
 
     const createTaskResult = await insertTaskWithFallback(payload);
@@ -264,6 +294,8 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
     setPriority('High');
     setStatus('Not started');
     setSelectedTags(['School']);
+    setCustomTags([]);
+    setNewTagDraft('');
     setSubtasks(['']);
 
     if (typeof onTaskCreated === 'function') {
@@ -364,17 +396,76 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
       <div className="atp-field">
         <label className="atp-label">TAGS</label>
         <div className="atp-pill-row">
-          {TAGS.map(tag => (
+          {availableTags.map(tag => (
             <button
               key={tag}
               type="button"
-              className={`atp-pill ${selectedTags.includes(tag) ? "atp-pill--active atp-pill--tag" : ""}`}
+              className={`atp-pill ${selectedTags.includes(tag) ? "atp-pill--active atp-pill--tag" : ""} ${customTags.includes(tag) ? "atp-pill--custom" : ""}`}
               onClick={() => toggleTag(tag)}
             >
-              {tag}
+              <span>{tag}</span>
+              {customTags.includes(tag) && (
+                <span
+                  className="atp-custom-tag-close"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Remove custom tag ${tag}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeCustomTag(tag);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removeCustomTag(tag);
+                    }
+                  }}
+                >
+                  x
+                </span>
+              )}
             </button>
           ))}
         </div>
+        <div className="atp-tag-custom-row">
+          <input
+            className="atp-input atp-tag-custom-input"
+            type="text"
+            placeholder="Create custom tag..."
+            value={newTagDraft}
+            onChange={(e) => setNewTagDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustomTag();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="atp-tag-custom-add-btn"
+            onClick={addCustomTag}
+          >
+            Add tag
+          </button>
+        </div>
+        {selectedTags.length > 0 && (
+          <div className="atp-selected-tags-row">
+            {selectedTags.map((tag) => (
+              <button
+                key={`selected-${tag}`}
+                type="button"
+                className="atp-selected-tag-chip"
+                onClick={() => removeTagFromSelection(tag)}
+                aria-label={`Remove ${tag} from selected tags`}
+              >
+                <span>{tag}</span>
+                <span className="atp-selected-tag-remove">x</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="atp-field">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Bell, Play, Square, Clock, CheckCircle2 } from 'lucide-react';
+import { Bell, Play, Square, Clock, CheckCircle2, Trash2 } from 'lucide-react';
 import ActivityPanel from "./activitypanel";
 import { Overview } from "./overview";
 import Inbox from "./inbox";
@@ -9,6 +9,8 @@ import useAppData from '../hooks/useAppData';
 import './dashboard.css';
 import { supabase } from '../lib/supabase';
 import Settings from './settings';
+
+const TASK_TAG_OPTIONS = ['School', 'Work', 'Personal', 'Reading', 'Coding'];
 
 function formatMinutes(value) {
   const mins = Number.parseInt(value, 10);
@@ -226,6 +228,31 @@ function serializeTaskNotes(notes) {
   return JSON.stringify(notes);
 }
 
+function parseTaskTags(task) {
+  const fromTags = task?.tags;
+  const parsed = [];
+
+  if (Array.isArray(fromTags)) {
+    parsed.push(...fromTags);
+  } else if (typeof fromTags === 'string') {
+    if (fromTags.includes(',')) {
+      parsed.push(...fromTags.split(','));
+    } else {
+      parsed.push(fromTags);
+    }
+  }
+
+  parsed.push(task?.category, task?.subject, task?.tag);
+
+  const normalized = parsed
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+
+  return normalized.filter((tag, index) => (
+    normalized.findIndex((value) => value.toLowerCase() === tag.toLowerCase()) === index
+  ));
+}
+
 export default function Dashboard({ initialActive = "Task" }) {
   const [active, setActive] = useState(initialActive);
   const { user, tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
@@ -243,9 +270,16 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('in_progress');
   const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [selectedPriority, setSelectedPriority] = useState('none');
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [customTagDraft, setCustomTagDraft] = useState('');
+  const [customTagOptions, setCustomTagOptions] = useState([]);
+  const [isSavingMeta, setIsSavingMeta] = useState(false);
   const [dueDateDraft, setDueDateDraft] = useState('');
   const [dueTimeDraft, setDueTimeDraft] = useState('');
   const [isSavingDueDate, setIsSavingDueDate] = useState(false);
+  const [isDeletingTask, setIsDeletingTask] = useState(false);
+  const [isDeleteTaskConfirmOpen, setIsDeleteTaskConfirmOpen] = useState(false);
   const friends = friendships.map(f => ({
     id: f.friend_id || f.id,
     name: f.friend_name || f.name || 'Friend',
@@ -312,9 +346,25 @@ export default function Dashboard({ initialActive = "Task" }) {
   const daysLeft = dueDate && !Number.isNaN(dueDate.getTime())
     ? Math.max(0, Math.ceil((dueDate - new Date()) / 86400000))
     : null;
-  const taskCategory = selectedTask?.category || selectedTask?.subject || selectedTask?.tag || 'General';
+  const taskTags = useMemo(() => parseTaskTags(selectedTask), [selectedTask]);
   const taskDescription = String(selectedTask?.description || '').trim();
   const rawTaskNotes = selectedTask?.notes ?? "";
+  const editableTagOptions = useMemo(() => {
+    const base = [...TASK_TAG_OPTIONS, ...customTagOptions];
+    taskTags.forEach((tag) => {
+      if (!base.some((value) => value.toLowerCase() === tag.toLowerCase())) {
+        base.push(tag);
+      }
+    });
+    selectedTags.forEach((tag) => {
+      if (!base.some((value) => value.toLowerCase() === tag.toLowerCase())) {
+        base.push(tag);
+      }
+    });
+    return base.filter((tag, index) => (
+      base.findIndex((value) => value.toLowerCase() === tag.toLowerCase()) === index
+    ));
+  }, [customTagOptions, selectedTags, taskTags]);
 
   useEffect(() => {
     const raw = String(selectedTask?.status || 'in_progress').toLowerCase();
@@ -328,6 +378,23 @@ export default function Dashboard({ initialActive = "Task" }) {
     }
     setSelectedStatus('in_progress');
   }, [selectedTask?.id, selectedTask?.status]);
+
+  useEffect(() => {
+    setSelectedPriority(priorityKey(selectedTask?.priority));
+    setSelectedTags(taskTags);
+    setCustomTagOptions((prev) => {
+      const additions = taskTags.filter((tag) => !TASK_TAG_OPTIONS.includes(tag));
+      if (additions.length === 0) return prev;
+
+      const next = [...prev];
+      additions.forEach((tag) => {
+        if (!next.some((value) => value.toLowerCase() === tag.toLowerCase())) {
+          next.push(tag);
+        }
+      });
+      return next;
+    });
+  }, [selectedTask?.id, selectedTask?.priority, taskTags]);
 
   useEffect(() => {
     setDueDateDraft(toDateInputValue(selectedTask?.due_date));
@@ -575,6 +642,125 @@ export default function Dashboard({ initialActive = "Task" }) {
     setIsSavingDueDate(false);
   };
 
+  const handlePriorityChange = async (nextPriority) => {
+    if (!selectedTask?.id || isSavingMeta) return;
+
+    setIsSavingMeta(true);
+    setSubtaskMessage('');
+
+    const { error } = await supabase
+      .from('tasks')
+      .update({ priority: nextPriority })
+      .eq('id', selectedTask.id);
+
+    if (!error) {
+      setSelectedPriority(nextPriority);
+      await refresh();
+      setSubtaskMessageType('success');
+      setSubtaskMessage('Priority updated.');
+    } else {
+      setSubtaskMessageType('error');
+      setSubtaskMessage(error.message || 'Could not update priority.');
+    }
+
+    setIsSavingMeta(false);
+  };
+
+  const handleTagChange = async (nextTags) => {
+    if (!selectedTask?.id || isSavingMeta) return;
+
+    setIsSavingMeta(true);
+    setSubtaskMessage('');
+
+    const isMissingColumnError = (error) => {
+      const code = String(error?.code || '');
+      const message = String(error?.message || '').toLowerCase();
+      return (
+        code === '42703' ||
+        message.includes('could not find the') && message.includes('column') ||
+        message.includes('schema cache') && message.includes('column')
+      );
+    };
+
+    const columnFallbacks = ['tag', 'tags', 'category', 'subject'];
+    let result = { error: { message: 'No compatible tag column found.' } };
+    let missingColumnAttempts = 0;
+
+    for (const columnName of columnFallbacks) {
+      const valueForColumn = columnName === 'tags'
+        ? nextTags
+        : (nextTags[0] || null);
+      result = await supabase
+        .from('tasks')
+        .update({ [columnName]: valueForColumn })
+        .eq('id', selectedTask.id);
+
+      if (!result.error) {
+        break;
+      }
+
+      if (!isMissingColumnError(result.error)) {
+        break;
+      }
+
+      missingColumnAttempts += 1;
+    }
+
+    if (!result.error) {
+      setSelectedTags(nextTags);
+      await refresh();
+      setSubtaskMessageType('success');
+      setSubtaskMessage(nextTags.length > 0 ? 'Tags updated.' : 'Tags cleared.');
+    } else {
+      setSubtaskMessageType('error');
+      if (missingColumnAttempts >= columnFallbacks.length) {
+        setSubtaskMessage('Tag updates are not configured in your database yet. Add a tag/tags/category column to tasks.');
+      } else {
+        setSubtaskMessage(result.error.message || 'Could not update tag.');
+      }
+    }
+
+    setIsSavingMeta(false);
+  };
+
+  const handleAddCustomTag = async () => {
+    const cleaned = customTagDraft.trim();
+    if (!cleaned || isSavingMeta || !selectedTask?.id) return;
+
+    const existingMatch = editableTagOptions.find(
+      (tag) => tag.toLowerCase() === cleaned.toLowerCase()
+    );
+    const nextTag = existingMatch || cleaned;
+
+    if (!existingMatch) {
+      setCustomTagOptions((prev) => [...prev, cleaned]);
+    }
+
+    if (!selectedTags.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())) {
+      await handleTagChange([...selectedTags, nextTag]);
+    }
+    setCustomTagDraft('');
+  };
+
+  const handleRemoveCustomTag = (tagToRemove) => {
+    if (!tagToRemove) return;
+    setCustomTagOptions((prev) => prev.filter((tag) => tag !== tagToRemove));
+    if (selectedTags.some((tag) => tag.toLowerCase() === tagToRemove.toLowerCase())) {
+      handleTagChange(
+        selectedTags.filter((tag) => tag.toLowerCase() !== tagToRemove.toLowerCase())
+      );
+    }
+  };
+
+  const handleTagToggle = (tag) => {
+    const isSelected = selectedTags.some((selected) => selected.toLowerCase() === tag.toLowerCase());
+    if (isSelected) {
+      handleTagChange(selectedTags.filter((selected) => selected.toLowerCase() !== tag.toLowerCase()));
+      return;
+    }
+    handleTagChange([...selectedTags, tag]);
+  };
+
   const persistNotes = async (nextNotes) => {
     if (!selectedTask?.id) return { error: { message: 'No selected task.' } };
 
@@ -711,6 +897,37 @@ export default function Dashboard({ initialActive = "Task" }) {
     }
 
     setSubtaskActionId(null);
+  };
+
+  const confirmDeleteTask = () => {
+    if (!selectedTask?.id || isDeletingTask) return;
+    setIsDeleteTaskConfirmOpen(true);
+  };
+
+  const handleDeleteTask = async () => {
+    if (!selectedTask?.id || isDeletingTask) return;
+
+    setIsDeletingTask(true);
+    setIsDeleteTaskConfirmOpen(false);
+    setSubtaskMessage('');
+
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', selectedTask.id);
+
+    if (!error) {
+      setSelectedTaskId(null);
+      await refresh();
+      setActive('Task');
+      setSubtaskMessageType('success');
+      setSubtaskMessage('Task deleted.');
+    } else {
+      setSubtaskMessageType('error');
+      setSubtaskMessage(error.message || 'Could not delete task.');
+    }
+
+    setIsDeletingTask(false);
   };
 
   const handleLogoClick = async () => {
@@ -988,13 +1205,100 @@ export default function Dashboard({ initialActive = "Task" }) {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="dashboard-task-status-block">
+                    <div className="dashboard-task-section-header">
+                      <h3 className="dashboard-task-section-title">Priority</h3>
+                      {isSavingMeta && <span className="dashboard-inline-saving">Saving...</span>}
+                    </div>
+                    <div className="dashboard-task-meta-chips">
+                      {['high', 'medium', 'low'].map((priority) => (
+                        <button
+                          key={priority}
+                          type="button"
+                          className={`dashboard-task-meta-btn dashboard-task-chip dashboard-task-chip--${priority} ${selectedPriority === priority ? 'active' : ''}`}
+                          onClick={() => handlePriorityChange(priority)}
+                          disabled={isSavingMeta}
+                        >
+                          {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="dashboard-task-status-block">
                     <h3 className="dashboard-task-section-title">Tags</h3>
                     <div className="dashboard-task-meta-chips">
-                      <span className={`dashboard-task-chip dashboard-task-chip--${priorityKey(selectedTask.priority)}`}>
-                        {formatPriorityLabel(selectedTask.priority)}
-                      </span>
-                      <span className="dashboard-task-chip">{taskCategory}</span>
+                      {editableTagOptions.map((tag) => {
+                        const isCustomTag = customTagOptions.some(
+                          (custom) => custom.toLowerCase() === tag.toLowerCase()
+                        );
+                        const isSelected = selectedTags.some(
+                          (selected) => selected.toLowerCase() === tag.toLowerCase()
+                        );
+
+                        if (isCustomTag) {
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              className={`dashboard-task-meta-btn dashboard-task-chip dashboard-task-chip--custom ${isSelected ? 'active' : ''}`}
+                              onClick={() => handleTagToggle(tag)}
+                              disabled={isSavingMeta}
+                            >
+                              <span>{tag}</span>
+                              <span
+                                className="dashboard-task-chip-close"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  handleRemoveCustomTag(tag);
+                                }}
+                                role="button"
+                                aria-label={`Remove ${tag} tag`}
+                                title="Remove custom tag"
+                              >
+                                x
+                              </span>
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={tag}
+                            type="button"
+                            className={`dashboard-task-meta-btn dashboard-task-chip ${isSelected ? 'active' : ''}`}
+                            onClick={() => handleTagToggle(tag)}
+                            disabled={isSavingMeta}
+                          >
+                            {tag}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="dashboard-custom-tag-row">
+                      <input
+                        type="text"
+                        className="dashboard-custom-tag-input"
+                        placeholder="Create custom tag"
+                        value={customTagDraft}
+                        onChange={(e) => setCustomTagDraft(e.target.value)}
+                        disabled={isSavingMeta}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomTag();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="dashboard-custom-tag-btn"
+                        onClick={handleAddCustomTag}
+                        disabled={isSavingMeta || !customTagDraft.trim()}
+                      >
+                        Add tag
+                      </button>
                     </div>
                   </div>
 
@@ -1107,6 +1411,45 @@ export default function Dashboard({ initialActive = "Task" }) {
                       )}
                     </div>
                   </div>
+
+                  <div className="dashboard-task-delete-section">
+                    <button
+                      type="button"
+                      className="dashboard-task-delete-btn"
+                      onClick={confirmDeleteTask}
+                      disabled={isDeletingTask}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {isDeletingTask ? 'Deleting...' : 'Delete task'}
+                    </button>
+                  </div>
+
+                  {isDeleteTaskConfirmOpen && (
+                    <div className="dashboard-confirm-overlay" role="dialog" aria-modal="true" aria-label="Confirm task deletion">
+                      <div className="dashboard-confirm-modal">
+                        <h4 className="dashboard-confirm-title">Delete task?</h4>
+                        <p className="dashboard-confirm-text">Are you sure you want to delete this task? This cannot be undone.</p>
+                        <div className="dashboard-confirm-actions">
+                          <button
+                            type="button"
+                            className="dashboard-confirm-btn dashboard-confirm-btn--secondary"
+                            onClick={() => setIsDeleteTaskConfirmOpen(false)}
+                            disabled={isDeletingTask}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            className="dashboard-confirm-btn dashboard-confirm-btn--danger"
+                            onClick={handleDeleteTask}
+                            disabled={isDeletingTask}
+                          >
+                            {isDeletingTask ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {subtaskMessage && (
                     <div className={`dashboard-subtask-toast dashboard-subtask-toast--${subtaskMessageType}`}>
