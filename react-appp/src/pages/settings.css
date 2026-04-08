@@ -1,8 +1,8 @@
 .settings-page {
     display: flex;
-    height: 100%;
+    height: auto;
     width: 100%;
-    min-height: calc(100vh - 60px);
+    min-height: 0;
     align-items: stretch;
 }
 
@@ -12,9 +12,9 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    padding: 16px 0;
+    padding: 10px 0;
     border-right: 1px solid #e0d8d0;
-    height: calc(100vh - 60px);
+    height: auto;
 }
 
 .settings-tab {
@@ -64,14 +64,14 @@
 
 .settings-content {
     flex: 1;
-    padding: 32px 40px;
+    padding: 20px 28px 12px;
 }
 
 .settings-section-title {
     font-size: 1.25rem;
     font-weight: 700;
     color: #746455;
-    margin: 0 0 24px 0;
+    margin: 0 0 14px 0;
 }
 
 .settings-status {
@@ -91,7 +91,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 0;
+    padding: 12px 0;
     border-bottom: 1px solid #e0d8d0;
 }
 
@@ -104,6 +104,71 @@
 .settings-row-value {
     font-size: 0.95rem;
     color: #746455;
+}
+
+.settings-input {
+    margin-top: 6px;
+    width: min(360px, 100%);
+    border: 1px solid #d7c9bc;
+    border-radius: 10px;
+    background: #fffdfb;
+    color: #746455;
+    font-size: 0.95rem;
+    padding: 9px 12px;
+    font-family: inherit;
+}
+
+.settings-input--password {
+    margin-top: 0;
+    width: 100%;
+    padding-right: 38px;
+}
+
+.settings-password-input-wrap {
+    position: relative;
+    width: min(360px, 100%);
+    margin-top: 6px;
+}
+
+.settings-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: -2rem;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: #8c7a6a;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.settings-password-toggle:hover {
+    color: #99836f;
+}
+
+.settings-password-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.settings-input:focus {
+    outline: none;
+    background: #fffdfb;
+    border-color: #99836f;
+    box-shadow: 0 0 0 3px rgba(153, 131, 111, 0.15);
+}
+
+.settings-input:-webkit-autofill,
+.settings-input:-webkit-autofill:hover,
+.settings-input:-webkit-autofill:focus,
+.settings-input:-webkit-autofill:active {
+    -webkit-text-fill-color: #746455;
+    -webkit-box-shadow: 0 0 0 1000px #fffdfb inset;
+    box-shadow: 0 0 0 1000px #fffdfb inset;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 .settings-edit-btn {
@@ -124,6 +189,47 @@
     opacity: 0.6;
     cursor: not-allowed;
     text-decoration: none;
+}
+
+.settings-password-panel {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    background: #f7f2ec;
+    border: 1px solid #e0d8d0;
+    margin-top: 12px;
+}
+
+.settings-password-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-password-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.settings-save-btn {
+    border: none;
+    border-radius: 999px;
+    background: #99836f;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 9px 14px;
+    cursor: pointer;
+}
+
+.settings-save-btn:hover:not(:disabled) {
+    background: #7f6959;
+}
+
+.settings-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .settings-coming-soon {
