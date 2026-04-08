@@ -1,16 +1,22 @@
 .atp-container {
   max-width: 860px;
   margin: 0 auto;
-  padding: 40px 48px;
-  background: #faf8f5;
-  min-height: 100vh;
-  font-family: 'Afacad', sans-serif;
+  padding: 10px 12px 72px;
+  background: transparent;
+  min-height: 0;
+  font-family: inherit;
+  border-radius: 0;
+  border: none;
+}
+
+.atp-container--embedded {
+  margin: 0;
 }
 
 .atp-heading {
-  font-size: 1.6rem;
+  font-size: 2rem;
   font-weight: 600;
-  color: #2e1f0e;
+  color: #99836F;
   margin: 0 0 6px;
 }
 
@@ -46,7 +52,7 @@
   border-radius: 10px;
   background: #fff;
   font-size: 0.9rem;
-  color: #2e1f0e;
+  color: #99836F;
   outline: none;
   box-sizing: border-box;
   transition: border-color 0.2s;
@@ -54,11 +60,11 @@
 
 .atp-input::placeholder {
   color: #c0b0a0;
-  font-family: 'Afacad', sans-serif;
+  font-family: inherit;
 }
 
 .atp-input:focus {
-  border-color: #c87941;
+  border-color: #99836F;
 }
 
 .atp-textarea {
@@ -69,7 +75,7 @@
   border-radius: 10px;
   background: #fff;
   font-size: 0.9rem;
-  color: #2e1f0e;
+  color: #99836F;
   outline: none;
   resize: vertical;
   box-sizing: border-box;
@@ -82,7 +88,7 @@
 }
 
 .atp-textarea:focus {
-  border-color: #c87941;
+  border-color: #99836F;
 }
 
 /* Due date + time row */
@@ -93,21 +99,8 @@
   align-items: flex-end;
 }
 
-.atp-time-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.atp-input--time {
-  width: 68px;
-  text-align: center;
-  padding: 12px 8px;
-}
-
-.atp-time-label {
-  font-size: 0.85rem;
-  color: #7a6150;
+.atp-input--deadline-time {
+  min-width: 130px;
 }
 
 /* Pills */
@@ -133,28 +126,28 @@
 }
 
 .atp-pill:hover {
-  border-color: #c87941;
-  color: #c87941;
+  border-color: #99836F;
+  color: #99836F;
 }
 
 /* Priority active = orange fill */
 .atp-pill--priority {
-  background: #c87941;
-  border-color: #c87941;
+  background: #99836F;
+  border-color: #99836F;
   color: #fff;
 }
 
 /* Status active = dark brown fill */
 .atp-pill--status {
-  background: #4a3728;
-  border-color: #4a3728;
+  background: #746455;
+  border-color: #746455;
   color: #fff;
 }
 
 /* Tag active = dark brown fill */
 .atp-pill--tag {
-  background: #4a3728;
-  border-color: #4a3728;
+  background: #746455;
+  border-color: #746455;
   color: #fff;
 }
 
@@ -174,7 +167,7 @@
   padding: 14px 18px;
   border-radius: 10px;
   border: none;
-  background: #4a3728;
+  background: #746455;
   color: #f0e6da;
   font-size: 0.9rem;
   outline: none;
@@ -189,7 +182,7 @@
 .atp-add-subtask {
   background: none;
   border: none;
-  color: #c87941;
+  color: #99836F;
   font-size: 0.85rem;
   cursor: pointer;
   padding: 4px 0;
@@ -206,10 +199,11 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+  padding-bottom: 24px;
 }
 
 .atp-btn-submit {
-  background: #c87941;
+  background: #99836F;
   color: #fff;
   border: none;
   padding: 14px 36px;
@@ -222,5 +216,5 @@
 }
 
 .atp-btn-submit:hover {
-  background: #b06a32;
+  background: #746455;
 }

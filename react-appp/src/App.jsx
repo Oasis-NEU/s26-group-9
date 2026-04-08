@@ -6,7 +6,6 @@ import Launch from './pages/launch.jsx';
 import Login from './pages/log-in.jsx';
 import Signup from './pages/signup.jsx';
 import Dashboard from './pages/dashboard.jsx';
-import AddTaskPage from './pages/AddTaskPage.jsx';
 
 function ProtectedRoute({ children }) {
   const [isAuthorized, setIsAuthorized] = useState(null);
@@ -43,7 +42,14 @@ function App() {
           <Route path="/" element={<Launch />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/tasks/new" element={<AddTaskPage />} />
+          <Route
+            path="/tasks/new"
+            element={(
+              <ProtectedRoute>
+                <Dashboard initialActive="AddTask" />
+              </ProtectedRoute>
+            )}
+          />
           <Route
             path="/dashboard"
             element={(

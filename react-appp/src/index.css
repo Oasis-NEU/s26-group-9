@@ -67,6 +67,12 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
 button:focus,
 button:focus-visible,
 button:active,

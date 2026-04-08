@@ -4,6 +4,7 @@ import { Bell, Play, Square, Clock, CheckCircle2 } from 'lucide-react';
 import ActivityPanel from "./activitypanel";
 import { Overview } from "./overview";
 import Inbox from "./inbox";
+import AddTaskPage from "./AddTaskPage";
 import useAppData from '../hooks/useAppData';
 import './dashboard.css';
 import { supabase } from '../lib/supabase';
@@ -215,8 +216,8 @@ function serializeTaskNotes(notes) {
   return JSON.stringify(notes);
 }
 
-export default function Dashboard() {
-  const [active, setActive] = useState("Task");
+export default function Dashboard({ initialActive = "Task" }) {
+  const [active, setActive] = useState(initialActive);
   const { user, tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const middlePanelRef = useRef(null);
@@ -684,7 +685,7 @@ export default function Dashboard() {
   };
 
   const handleAddTask = () => {
-    navigate('/tasks/new');
+    setActive("AddTask");
   };
 
   const isInitialLoading =
@@ -1069,6 +1070,10 @@ export default function Dashboard() {
 
           {active === "Inbox" && (
             <Inbox />
+          )}
+
+          {active === "AddTask" && (
+            <AddTaskPage />
           )}
         </main>
         {active === "Task" && (
