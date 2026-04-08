@@ -1027,6 +1027,10 @@ export default function Dashboard({ initialActive = "Task" }) {
               ) : (
                 tasks.slice(0, 5).map((task) => {
                   const badgeType = priorityKey(task?.priority);
+                  const rawStatus = String(task?.status || 'in_progress').toLowerCase();
+                  const statusType = rawStatus.includes('not') && rawStatus.includes('start')
+                    ? 'not-started'
+                    : ((rawStatus === 'completed' || rawStatus === 'done') ? 'completed' : 'in-progress');
                   return (
                     <button
                       type="button"
@@ -1041,9 +1045,14 @@ export default function Dashboard({ initialActive = "Task" }) {
                         <p className="dashboard-task-card-title">{task?.title || 'Untitled task'}</p>
                         <p className="dashboard-task-card-due">{formatDueDate(task?.due_date)}</p>
                       </div>
-                      <span className={`dashboard-priority-badge dashboard-priority-badge--${badgeType}`}>
-                        {badgeType}
-                      </span>
+                      <div className="dashboard-task-card-badges">
+                        <span className={`dashboard-task-status-badge dashboard-task-status-badge--${statusType}`}>
+                          {formatStatusLabel(task?.status)}
+                        </span>
+                        <span className={`dashboard-priority-badge dashboard-priority-badge--${badgeType}`}>
+                          {badgeType}
+                        </span>
+                      </div>
                     </button>
                   );
                 })

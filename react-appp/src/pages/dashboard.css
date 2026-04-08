@@ -168,6 +168,34 @@
     background: #6f5d50;
 }
 
+.dashboard-task-card-badges {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.dashboard-task-status-badge {
+    padding: 5px 9px;
+    border-radius: 8px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+}
+
+.dashboard-task-status-badge--not-started {
+    background: #b9a797;
+}
+
+.dashboard-task-status-badge--in-progress {
+    background: #cd8b5c;
+}
+
+.dashboard-task-status-badge--completed {
+    background: #7f6959;
+}
+
 .dashboard-priority-badge--none {
     background: #8a7664;
 }
