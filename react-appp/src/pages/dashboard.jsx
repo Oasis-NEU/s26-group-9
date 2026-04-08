@@ -70,23 +70,23 @@ function toDateInputValue(dateValue) {
 function parseDateInput(inputValue) {
   const raw = String(inputValue || '').trim();
   if (!raw) return null;
-  
+
   const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!match) return null;
-  
+
   const month = Number(match[1]);
   const day = Number(match[2]);
   const year = Number(match[3]);
-  
+
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  
+
   const m = String(month).padStart(2, '0');
   const d = String(day).padStart(2, '0');
   return `${year}-${m}-${d}`;
 }
 function formatDateInputAsYouType(value) {
   const digits = String(value || '').replace(/\D/g, '');
-  
+
   if (digits.length === 0) {
     return '';
   } else if (digits.length <= 2) {
@@ -121,29 +121,39 @@ function toTimeInputValue(timeValue) {
   const hour = Number(match[1]);
   const minute = Number(match[2]);
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return '';
-  return `${match[1]}:${match[2]}`;
+
+  const date = new Date(2000, 0, 1, hour, minute, 0);
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
 function parseTimeInput(inputValue) {
   const raw = String(inputValue || '').trim();
   if (!raw) return null;
 
-  const match = raw.match(/^(\d{2}):(\d{2})$/);
+  const match = raw.match(/^(\d{1,2}):(\d{2})\s*([aApP][mM])$/);
   if (!match) return null;
 
   const hour = Number(match[1]);
   const minute = Number(match[2]);
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-  return `${match[1]}:${match[2]}:00`;
+  const meridiem = match[3].toUpperCase();
+  if (hour < 1 || hour > 12 || minute < 0 || minute > 59) return null;
+
+  let hour24 = hour % 12;
+  if (meridiem === 'PM') hour24 += 12;
+  const hourText = String(hour24).padStart(2, '0');
+  const minuteText = String(minute).padStart(2, '0');
+  return `${hourText}:${minuteText}:00`;
 }
 
 function formatDueTimeLabel(timeValue) {
-  const time = toTimeInputValue(timeValue);
-  if (!time) return '';
+  const raw = String(timeValue || '').trim();
+  if (!raw) return '';
 
-  const [hoursText, minutesText] = time.split(':');
-  const hours = Number(hoursText);
-  const minutes = Number(minutesText);
+  const match = raw.match(/^(\d{2}):(\d{2})/);
+  if (!match) return '';
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return '';
 
   const date = new Date(2000, 0, 1, hours, minutes, 0);
@@ -229,6 +239,8 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [noteDraft, setNoteDraft] = useState("");
   const [noteItems, setNoteItems] = useState([]);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('in_progress');
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [dueDateDraft, setDueDateDraft] = useState('');
@@ -301,7 +313,8 @@ export default function Dashboard({ initialActive = "Task" }) {
     ? Math.max(0, Math.ceil((dueDate - new Date()) / 86400000))
     : null;
   const taskCategory = selectedTask?.category || selectedTask?.subject || selectedTask?.tag || 'General';
-  const rawTaskNotes = selectedTask?.notes ?? selectedTask?.description ?? "";
+  const taskDescription = String(selectedTask?.description || '').trim();
+  const rawTaskNotes = selectedTask?.notes ?? "";
 
   useEffect(() => {
     const raw = String(selectedTask?.status || 'in_progress').toLowerCase();
@@ -336,6 +349,10 @@ export default function Dashboard({ initialActive = "Task" }) {
     setNoteItems(parseTaskNotes(rawTaskNotes));
     setNoteDraft("");
   }, [selectedTask?.id, rawTaskNotes]);
+
+  useEffect(() => {
+    setDescriptionDraft(taskDescription);
+  }, [selectedTask?.id, taskDescription]);
 
   useEffect(() => {
     if (!subtaskMessage) return;
@@ -510,7 +527,7 @@ export default function Dashboard({ initialActive = "Task" }) {
     const nextDueTime = dueTimeDraft ? parseTimeInput(dueTimeDraft) : null;
     if (dueTimeDraft && !nextDueTime) {
       setSubtaskMessageType('error');
-      setSubtaskMessage('Invalid time format. Use HH:MM.');
+      setSubtaskMessage('Invalid time format. Use HH:MM AM/PM.');
       setIsSavingDueDate(false);
       return;
     }
@@ -562,17 +579,10 @@ export default function Dashboard({ initialActive = "Task" }) {
     if (!selectedTask?.id) return { error: { message: 'No selected task.' } };
 
     const payload = serializeTaskNotes(nextNotes);
-    let result = await supabase
+    const result = await supabase
       .from('tasks')
       .update({ notes: payload })
       .eq('id', selectedTask.id);
-
-    if (result.error) {
-      result = await supabase
-        .from('tasks')
-        .update({ description: payload })
-        .eq('id', selectedTask.id);
-    }
 
     return result;
   };
@@ -619,6 +629,30 @@ export default function Dashboard({ initialActive = "Task" }) {
     }
 
     setIsSavingNotes(false);
+  };
+
+  const handleSaveDescription = async () => {
+    if (!selectedTask?.id) return;
+
+    setIsSavingDescription(true);
+    setSubtaskMessage('');
+
+    const nextDescription = descriptionDraft.trim() || null;
+    const { error } = await supabase
+      .from('tasks')
+      .update({ description: nextDescription })
+      .eq('id', selectedTask.id);
+
+    if (!error) {
+      await refresh();
+      setSubtaskMessageType('success');
+      setSubtaskMessage(nextDescription ? 'Description updated.' : 'Description cleared.');
+    } else {
+      setSubtaskMessageType('error');
+      setSubtaskMessage(error.message || 'Could not update description.');
+    }
+
+    setIsSavingDescription(false);
   };
 
   const handleToggleSubtaskComplete = async (subtask) => {
@@ -686,6 +720,16 @@ export default function Dashboard({ initialActive = "Task" }) {
 
   const handleAddTask = () => {
     setActive("AddTask");
+  };
+
+  const handleTaskCreated = async (taskId) => {
+    await refresh();
+    if (taskId) {
+      setSelectedTaskId(taskId);
+    }
+    setActive('Task');
+    setSubtaskMessageType('success');
+    setSubtaskMessage('Task added.');
   };
 
   const isInitialLoading =
@@ -914,8 +958,10 @@ export default function Dashboard({ initialActive = "Task" }) {
                         disabled={isSavingDueDate}
                       />
                       <input
-                        type="time"
+                        type="text"
                         className="dashboard-due-date-input dashboard-due-time-input"
+                        placeholder="HH:MM AM/PM"
+                        inputMode="text"
                         value={dueTimeDraft}
                         onChange={(e) => setDueTimeDraft(e.target.value)}
                         disabled={isSavingDueDate}
@@ -950,6 +996,25 @@ export default function Dashboard({ initialActive = "Task" }) {
                       </span>
                       <span className="dashboard-task-chip">{taskCategory}</span>
                     </div>
+                  </div>
+
+                  <h3 className="dashboard-task-section-title">Description</h3>
+                  <div className="dashboard-task-description-card">
+                    <textarea
+                      className="dashboard-task-description-input"
+                      value={descriptionDraft}
+                      onChange={(e) => setDescriptionDraft(e.target.value)}
+                      placeholder="Add a description..."
+                      rows={3}
+                    />
+                    <button
+                      type="button"
+                      className="dashboard-task-description-save-btn"
+                      onClick={handleSaveDescription}
+                      disabled={isSavingDescription}
+                    >
+                      {isSavingDescription ? 'Saving...' : 'Save description'}
+                    </button>
                   </div>
 
                   <h3 className="dashboard-task-section-title">Subtasks</h3>
@@ -1073,7 +1138,11 @@ export default function Dashboard({ initialActive = "Task" }) {
           )}
 
           {active === "AddTask" && (
-            <AddTaskPage />
+            <AddTaskPage
+              userId={user?.id}
+              onRefresh={refresh}
+              onTaskCreated={handleTaskCreated}
+            />
           )}
         </main>
         {active === "Task" && (

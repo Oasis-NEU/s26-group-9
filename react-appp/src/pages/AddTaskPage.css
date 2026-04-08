@@ -26,6 +26,20 @@
   margin: 0 0 32px;
 }
 
+.atp-submit-message {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.atp-submit-message--success {
+  color: #746455;
+}
+
+.atp-submit-message--error {
+  color: #b45f4a;
+}
+
 /* Field wrapper */
 .atp-field {
   margin-bottom: 24px;
@@ -130,24 +144,36 @@
   color: #99836F;
 }
 
-/* Priority active = orange fill */
-.atp-pill--priority {
-  background: #99836F;
-  border-color: #99836F;
+/* Priority active colors match dashboard priority badges */
+.atp-pill--priority-high {
+  background: #e09b65;
+  border-color: #e09b65;
+  color: #fff;
+}
+
+.atp-pill--priority-medium {
+  background: #b8a897;
+  border-color: #b8a897;
+  color: #fff;
+}
+
+.atp-pill--priority-low {
+  background: #6f5d50;
+  border-color: #6f5d50;
   color: #fff;
 }
 
 /* Status active = dark brown fill */
 .atp-pill--status {
-  background: #746455;
-  border-color: #746455;
+  background: #a6907a;
+  border-color: #a6907a;
   color: #fff;
 }
 
 /* Tag active = dark brown fill */
 .atp-pill--tag {
-  background: #746455;
-  border-color: #746455;
+  background: #a6907a;
+  border-color: #a6907a;
   color: #fff;
 }
 
@@ -162,21 +188,48 @@
   gap: 10px;
 }
 
+.atp-subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .atp-subtask-input {
   width: 100%;
-  padding: 14px 18px;
-  border-radius: 10px;
-  border: none;
-  background: #746455;
-  color: #f0e6da;
-  font-size: 0.9rem;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #d7c7b8;
+  background: #fdfaf6;
+  color: #746455;
+  font-size: 0.92rem;
   outline: none;
   box-sizing: border-box;
   font-family: inherit;
 }
 
 .atp-subtask-input::placeholder {
-  color: #9e8070;
+  color: #8a7664;
+}
+
+.atp-subtask-input:focus {
+  border-color: #99836F;
+}
+
+.atp-subtask-remove {
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #99836F;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.atp-subtask-remove:hover {
+  background: #f0e6dc;
 }
 
 .atp-add-subtask {
@@ -217,4 +270,9 @@
 
 .atp-btn-submit:hover {
   background: #746455;
+}
+
+.atp-btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
