@@ -220,5 +220,6 @@
     display: flex;
     gap: 14px;
     color: #8b6f5c;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
 }

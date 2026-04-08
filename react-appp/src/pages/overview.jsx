@@ -22,6 +22,42 @@ function formatMinutes(value) {
     return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
+function parseCalendarDate(value) {
+    if (!value) return null;
+
+    const raw = String(value);
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (match) {
+        const year = Number.parseInt(match[1], 10);
+        const month = Number.parseInt(match[2], 10) - 1;
+        const day = Number.parseInt(match[3], 10);
+        return new Date(year, month, day, 12, 0, 0, 0);
+    }
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
+}
+
+function daysUntilDate(value) {
+    const due = parseCalendarDate(value);
+    if (!due) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDay = new Date(due);
+    dueDay.setHours(0, 0, 0, 0);
+
+    return Math.ceil((dueDay - today) / 86400000);
+}
+
+function formatDueDate(value) {
+    const due = parseCalendarDate(value);
+    if (!due) return 'No due date';
+    return due.toLocaleDateString('en-US');
+}
+
 function computeStreak(sessions = []) {
     const activeDays = new Set(
         sessions
@@ -42,9 +78,8 @@ function computeStreak(sessions = []) {
 }
 
 function isDueInDays(task, maxDays = 7) {
-    const date = new Date(task?.due_date);
-    if (Number.isNaN(date.getTime())) return false;
-    const days = Math.ceil((date - new Date()) / 86400000);
+    const days = daysUntilDate(task?.due_date);
+    if (days === null) return false;
     return days >= 0 && days <= maxDays;
 }
 
@@ -171,7 +206,13 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
 
     const dueThisWeek = safeTasks
         .filter((t) => isDueInDays(t, 7))
-        .sort((a, b) => new Date(a?.due_date) - new Date(b?.due_date));
+        .sort((a, b) => {
+            const aDate = parseCalendarDate(a?.due_date);
+            const bDate = parseCalendarDate(b?.due_date);
+            const aTime = aDate ? aDate.getTime() : Number.POSITIVE_INFINITY;
+            const bTime = bDate ? bDate.getTime() : Number.POSITIVE_INFINITY;
+            return aTime - bTime;
+        });
 
     const pri = { high: 0, medium: 1, low: 2 };
     const focusTask = safeTasks
@@ -282,7 +323,7 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
                         <div className="overview-focus-body">
                             <h3>Focus: {focusTask?.title || 'No active task'}</h3>
                             <p>
-                                {focusTask?.due_date ? `Due ${new Date(focusTask.due_date).toLocaleDateString()}` : 'No due date'}
+                                {focusTask?.due_date ? `Due ${formatDueDate(focusTask.due_date)}` : 'No due date'}
                                 {' · '}
                                 {(focusTask?.priority || 'medium').toString()} priority
                                 {' · '}
@@ -304,13 +345,13 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
                                 </div>
                             ) : (
                                 dueThisWeek.slice(0, 4).map((task) => {
-                                    const daysLeft = Math.max(0, Math.ceil((new Date(task?.due_date) - new Date()) / 86400000));
+                                    const daysLeft = Math.max(0, daysUntilDate(task?.due_date) ?? 0);
                                     return (
                                         <div key={task?.id || `${task?.title}-${task?.due_date}`} className="overview-deadline-card">
                                             <div>
                                                 <h4>{task?.title || 'Untitled task'}</h4>
                                                 <p>
-                                                    Due {new Date(task?.due_date).toLocaleDateString()} · {formatMinutes(task?.estimated_mins)} est. remaining
+                                                    Due {formatDueDate(task?.due_date)} · {formatMinutes(task?.estimated_mins)} est. remaining
                                                 </p>
                                             </div>
                                             <div className="overview-days-badge">{daysLeft} day{daysLeft === 1 ? '' : 's'}</div>

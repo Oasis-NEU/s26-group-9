@@ -15,9 +15,15 @@ create table if not exists public.tasks (
     user_id uuid not null references auth.users (id) on delete cascade,
     title text not null,
     status text not null default 'in_progress',
+    due_date date,
+    due_time time,
     time_spent_mins integer not null default 0,
     created_at timestamptz not null default now()
 );
+
+alter table public.tasks
+    add column if not exists due_date date,
+    add column if not exists due_time time;
 
 create table if not exists public.subtasks (
     id uuid primary key default gen_random_uuid(),

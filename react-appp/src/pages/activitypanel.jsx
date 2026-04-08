@@ -32,9 +32,14 @@ function formatSessionTimeRange(startedAt, durationMins) {
     const mins = Number.parseInt(durationMins ?? 0, 10);
     const end = new Date(start.getTime() + Math.max(0, mins) * 60000);
 
+    const dateText = start.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
     const startText = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
     const endText = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
-    return `${startText}-${endText}`;
+    return `${dateText} · ${startText}-${endText}`;
 }
 
 function computeStreak(sessions = []) {

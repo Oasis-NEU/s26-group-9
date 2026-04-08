@@ -60,10 +60,93 @@ function toDateInputValue(dateValue) {
   const parts = extractDateParts(dateValue);
   if (!parts) return '';
 
-  const y = String(parts.year);
   const m = String(parts.month).padStart(2, '0');
   const d = String(parts.day).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const y = String(parts.year);
+  return `${m}/${d}/${y}`;
+}
+
+function parseDateInput(inputValue) {
+  const raw = String(inputValue || '').trim();
+  if (!raw) return null;
+  
+  const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return null;
+  
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  const year = Number(match[3]);
+  
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  
+  const m = String(month).padStart(2, '0');
+  const d = String(day).padStart(2, '0');
+  return `${year}-${m}-${d}`;
+}
+function formatDateInputAsYouType(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  
+  if (digits.length === 0) {
+    return '';
+  } else if (digits.length <= 2) {
+    return digits;
+  } else if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  } else {
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+  }
+}
+
+function normalizeDateInput(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  const match = raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{0,4}))?$/);
+  if (!match) return formatDateInputAsYouType(raw);
+
+  const month = match[1].padStart(2, '0');
+  const day = match[2].padStart(2, '0');
+  const year = match[3] || '';
+  return year ? `${month}/${day}/${year}` : `${month}/${day}`;
+}
+
+function toTimeInputValue(timeValue) {
+  const raw = String(timeValue || '').trim();
+  if (!raw) return '';
+
+  const match = raw.match(/^(\d{2}):(\d{2})/);
+  if (!match) return '';
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return '';
+  return `${match[1]}:${match[2]}`;
+}
+
+function parseTimeInput(inputValue) {
+  const raw = String(inputValue || '').trim();
+  if (!raw) return null;
+
+  const match = raw.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return null;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return `${match[1]}:${match[2]}:00`;
+}
+
+function formatDueTimeLabel(timeValue) {
+  const time = toTimeInputValue(timeValue);
+  if (!time) return '';
+
+  const [hoursText, minutesText] = time.split(':');
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return '';
+
+  const date = new Date(2000, 0, 1, hours, minutes, 0);
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
 function priorityKey(priority) {
@@ -148,6 +231,7 @@ export default function Dashboard() {
   const [selectedStatus, setSelectedStatus] = useState('in_progress');
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [dueDateDraft, setDueDateDraft] = useState('');
+  const [dueTimeDraft, setDueTimeDraft] = useState('');
   const [isSavingDueDate, setIsSavingDueDate] = useState(false);
   const friends = friendships.map(f => ({
     id: f.friend_id || f.id,
@@ -234,6 +318,10 @@ export default function Dashboard() {
   useEffect(() => {
     setDueDateDraft(toDateInputValue(selectedTask?.due_date));
   }, [selectedTask?.id, selectedTask?.due_date]);
+
+  useEffect(() => {
+    setDueTimeDraft(toTimeInputValue(selectedTask?.due_time));
+  }, [selectedTask?.id, selectedTask?.due_time]);
 
   useEffect(() => {
     if (active !== "Task" || !selectedTaskId || !middlePanelRef.current) {
@@ -410,19 +498,60 @@ export default function Dashboard() {
     setIsSavingDueDate(true);
     setSubtaskMessage('');
 
-    const nextDueDate = dueDateDraft || null;
-    const { error } = await supabase
+    const nextDueDate = dueDateDraft ? parseDateInput(dueDateDraft) : null;
+    if (dueDateDraft && !nextDueDate) {
+      setSubtaskMessageType('error');
+      setSubtaskMessage('Invalid date format. Use MM/DD/YYYY.');
+      setIsSavingDueDate(false);
+      return;
+    }
+
+    const nextDueTime = dueTimeDraft ? parseTimeInput(dueTimeDraft) : null;
+    if (dueTimeDraft && !nextDueTime) {
+      setSubtaskMessageType('error');
+      setSubtaskMessage('Invalid time format. Use HH:MM.');
+      setIsSavingDueDate(false);
+      return;
+    }
+
+    const payload = {
+      due_date: nextDueDate,
+      due_time: nextDueTime,
+    };
+
+    let { error } = await supabase
       .from('tasks')
-      .update({ due_date: nextDueDate })
+      .update(payload)
       .eq('id', selectedTask.id);
+
+    // Keep date editing working even if due_time column has not been added yet.
+    if (error?.code === '42703' && String(error.message || '').includes('due_time')) {
+      const fallback = await supabase
+        .from('tasks')
+        .update({ due_date: nextDueDate })
+        .eq('id', selectedTask.id);
+      error = fallback.error || null;
+
+      if (!error) {
+        await refresh();
+        setSubtaskMessageType('success');
+        setSubtaskMessage('Due date updated. Add a due_time column in tasks to save deadline time.');
+        setIsSavingDueDate(false);
+        return;
+      }
+    }
 
     if (!error) {
       await refresh();
       setSubtaskMessageType('success');
-      setSubtaskMessage(nextDueDate ? 'Due date updated.' : 'Due date cleared.');
+      if (nextDueDate || nextDueTime) {
+        setSubtaskMessage('Deadline updated.');
+      } else {
+        setSubtaskMessage('Deadline cleared.');
+      }
     } else {
       setSubtaskMessageType('error');
-      setSubtaskMessage(error.message || 'Could not update due date.');
+      setSubtaskMessage(error.message || 'Could not update deadline.');
     }
 
     setIsSavingDueDate(false);
@@ -590,7 +719,7 @@ export default function Dashboard() {
           className="dashboard-home-link"
           onClick={handleLogoClick}
           aria-label="Go to launch page or reset dashboard">
-          ProductiviTea
+          <span className="dashboard-home-text">ProductiviTea</span>
         </button>
         <div className="dashboard-topbar-right">
           <span className="dashboard-topbar-date">
@@ -687,7 +816,7 @@ export default function Dashboard() {
                     <div>
                       <h1 className="dashboard-title">{selectedTask.title || 'Untitled task'}</h1>
                       <p className="dashboard-text">
-                        {formatStatusLabel(selectedTask.status)} · {selectedTask.due_date ? `Due ${formatDueDateFull(selectedTask.due_date)}` : 'No due date'}
+                        {formatStatusLabel(selectedTask.status)} · {selectedTask.due_date ? `Due ${formatDueDateFull(selectedTask.due_date)}` : 'No due date'}{selectedTask.due_time ? ` at ${formatDueTimeLabel(selectedTask.due_time)}` : ''}
                       </p>
                     </div>
                     {!isSessionActive ? (
@@ -770,15 +899,24 @@ export default function Dashboard() {
 
                   <div className="dashboard-task-due-block">
                     <div className="dashboard-task-section-header">
-                      <h3 className="dashboard-task-section-title">Due Date</h3>
+                      <h3 className="dashboard-task-section-title">Deadline</h3>
                       {isSavingDueDate && <span className="dashboard-inline-saving">Saving...</span>}
                     </div>
                     <div className="dashboard-due-date-controls">
                       <input
-                        type="date"
+                        type="text"
                         className="dashboard-due-date-input"
+                        placeholder="MM/DD/YYYY"
                         value={dueDateDraft}
-                        onChange={(e) => setDueDateDraft(e.target.value)}
+                        onChange={(e) => setDueDateDraft(formatDateInputAsYouType(e.target.value))}
+                        onBlur={(e) => setDueDateDraft(normalizeDateInput(e.target.value))}
+                        disabled={isSavingDueDate}
+                      />
+                      <input
+                        type="time"
+                        className="dashboard-due-date-input dashboard-due-time-input"
+                        value={dueTimeDraft}
+                        onChange={(e) => setDueTimeDraft(e.target.value)}
                         disabled={isSavingDueDate}
                       />
                       <button
@@ -792,7 +930,10 @@ export default function Dashboard() {
                       <button
                         type="button"
                         className="dashboard-due-date-btn dashboard-due-date-btn--secondary"
-                        onClick={() => setDueDateDraft('')}
+                        onClick={() => {
+                          setDueDateDraft('');
+                          setDueTimeDraft('');
+                        }}
                         disabled={isSavingDueDate}
                       >
                         Clear
