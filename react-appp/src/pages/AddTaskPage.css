@@ -1,0 +1,226 @@
+.atp-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 48px;
+  background: #faf8f5;
+  min-height: 100vh;
+  font-family: 'Afacad', sans-serif;
+}
+
+.atp-heading {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #2e1f0e;
+  margin: 0 0 6px;
+}
+
+.atp-subheading {
+  font-size: 0.85rem;
+  color: #9e8572;
+  margin: 0 0 32px;
+}
+
+/* Field wrapper */
+.atp-field {
+  margin-bottom: 24px;
+}
+
+.atp-field--grow {
+  flex: 1;
+}
+
+.atp-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #7a6150;
+  margin-bottom: 8px;
+}
+
+/* Inputs */
+.atp-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid #ddd4c8;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.9rem;
+  color: #2e1f0e;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.atp-input::placeholder {
+  color: #c0b0a0;
+  font-family: 'Afacad', sans-serif;
+}
+
+.atp-input:focus {
+  border-color: #c87941;
+}
+
+.atp-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px 16px;
+  border: 1.5px solid #ddd4c8;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.9rem;
+  color: #2e1f0e;
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.atp-textarea::placeholder {
+  color: #c0b0a0;
+}
+
+.atp-textarea:focus {
+  border-color: #c87941;
+}
+
+/* Due date + time row */
+.atp-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  align-items: flex-end;
+}
+
+.atp-time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.atp-input--time {
+  width: 68px;
+  text-align: center;
+  padding: 12px 8px;
+}
+
+.atp-time-label {
+  font-size: 0.85rem;
+  color: #7a6150;
+}
+
+/* Pills */
+.atp-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.atp-pill {
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1.5px solid #ddd4c8;
+  background: #fff;
+  font-size: 0.85rem;
+  color: #5c4a38;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+.atp-pill:hover {
+  border-color: #c87941;
+  color: #c87941;
+}
+
+/* Priority active = orange fill */
+.atp-pill--priority {
+  background: #c87941;
+  border-color: #c87941;
+  color: #fff;
+}
+
+/* Status active = dark brown fill */
+.atp-pill--status {
+  background: #4a3728;
+  border-color: #4a3728;
+  color: #fff;
+}
+
+/* Tag active = dark brown fill */
+.atp-pill--tag {
+  background: #4a3728;
+  border-color: #4a3728;
+  color: #fff;
+}
+
+.atp-check-icon {
+  font-size: 0.75rem;
+}
+
+/* Subtasks */
+.atp-subtasks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.atp-subtask-input {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: none;
+  background: #4a3728;
+  color: #f0e6da;
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.atp-subtask-input::placeholder {
+  color: #9e8070;
+}
+
+.atp-add-subtask {
+  background: none;
+  border: none;
+  color: #c87941;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: left;
+  font-family: inherit;
+}
+
+.atp-add-subtask:hover {
+  text-decoration: underline;
+}
+
+/* Submit */
+.atp-submit-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.atp-btn-submit {
+  background: #c87941;
+  color: #fff;
+  border: none;
+  padding: 14px 36px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+
+.atp-btn-submit:hover {
+  background: #b06a32;
+}
