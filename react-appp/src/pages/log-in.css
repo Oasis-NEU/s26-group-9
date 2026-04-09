@@ -1,37 +1,33 @@
-body {
-    background-color: #f8f7f6;
-    font-family: 'Afacad', sans-serif;
-    ;
-    margin: 0;
-    padding: 0;
-}
-
 .login-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 9rem 1.5rem 4rem;
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: 1.5rem;
+    margin-top: 6rem;
+    min-height: 100vh;
+    box-sizing: border-box;
 }
 
-@media (min-width: 1024px) {
+@media (max-width: 640px) {
     .login-container {
-        padding-left: 2rem;
-        padding-right: 2rem;
+        max-width: 18rem;
     }
 }
 
 .login-header {
-    margin: 0 auto;
-    width: 100%;
-    max-width: 24rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 640px) {
+    .login-header {
+        margin-bottom: 2rem;
+    }
 }
 
 .login-logo {
-    width: 9.75rem;
+    width: 11rem;
     height: auto;
-    display: block;
-    margin: 0 auto;
-
+    display: inline-block;
 }
 
 .login-title {
@@ -44,9 +40,7 @@ body {
 }
 
 .login-form-container {
-    margin-top: 2rem;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto;
     width: 100%;
     max-width: 24rem;
 }
@@ -54,30 +48,30 @@ body {
 .login-form {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
 .login-label {
     display: block;
     font-size: 1rem;
     font-weight: 500;
-    text-align: center;
     color: #746455;
     text-align: center;
+    margin-bottom: 0.35rem;
 }
 
 .login-input-wrapper {
-    margin-top: 0.5rem;
     position: relative;
     width: 100%;
-    max-width: 24rem;
+    max-width: 22rem;
+    margin: 0 auto;
 }
 
 .login-form .password-input-wrapper {
     position: relative;
     width: 100%;
-    max-width: 24rem;
+    max-width: 22rem;
+    margin: 0 auto;
 }
 
 
@@ -119,13 +113,13 @@ body {
     font-size: 1rem;
     font-family: 'Afacad', sans-serif;
     color: #746455;
-    outline: 1px solid #d1d5db;
-    outline-offset: -1px;
+    border: 1px solid #b5a79a;
+    outline: none;
     box-sizing: border-box;
-    width: 100%;
-    min-width: 18rem;
-    max-width: 24rem;
-    margin: 0 auto;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .login-input::placeholder {
@@ -135,8 +129,8 @@ body {
 }
 
 .login-input:focus {
-    outline: 2px solid #99836F;
-    outline-offset: -2px;
+    border-color: #99836F;
+    box-shadow: 0 0 0 3px rgba(153, 131, 111, 0.16);
 }
 
 .login-input:-webkit-autofill,
@@ -149,17 +143,9 @@ body {
     transition: background-color 5000s ease-in-out 0s;
 }
 
-@media (min-width: 640px) {
-    .login-input {
-        font-size: 0.875rem;
-    }
-}
-
 .password-header {
     display: block;
-    align-items: center;
     width: 100%;
-    justify-content: space-between;
 }
 
 .password-header .login-label {
@@ -170,9 +156,9 @@ body {
 .forgot-password-wrapper {
     font-size: 0.875rem;
     text-align: right;
-    max-width: 24rem;
+    max-width: 22rem;
     width: 100%;
-    margin: 0.25rem auto 0 auto;
+    margin: 0.25rem auto 0;
 }
 
 .forgot-password-link {
@@ -187,7 +173,6 @@ body {
 
 .login-submit-button {
     display: flex;
-    min-width: 8rem;
     max-width: 8rem;
     width: 100%;
     justify-content: center;
@@ -203,13 +188,18 @@ body {
     cursor: pointer;
 }
 
+.login-button-wrapper {
+    margin-top: 1.25rem;
+    display: flex;
+    justify-content: center;
+}
+
 .login-submit-button:hover {
     background-color: #746455;
 }
 
 .login-submit-button:focus-visible {
-    outline: 2px solid #99836F;
-    outline-offset: 2px;
+    outline: none;
 }
 
 .login-submit-button:disabled {
@@ -225,7 +215,7 @@ body {
 }
 
 .signup-prompt {
-    margin-top: 2rem;
+    margin-top: 1.25rem;
     text-align: center;
     font-size: 0.875rem;
     color: #6b7280;

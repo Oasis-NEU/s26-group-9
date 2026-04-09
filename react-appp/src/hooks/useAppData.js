@@ -162,10 +162,7 @@ export default function useAppData() {
         const userId = currentUser.id;
 
         const [profileResult, tasksResult, subtasksResult, sessionsResult, friendshipsResult] = await Promise.all([
-            queryWithFallback(
-                () => supabase.from('users').select('*').eq('id', userId).maybeSingle(),
-                () => supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
-            ),
+            supabase.from('users').select('*').eq('id', userId).maybeSingle(),
             fetchRowsByUser({
                 tableName: 'tasks',
                 userId,

@@ -420,22 +420,15 @@ export default function Dashboard({ initialActive = "Task" }) {
         return;
       }
 
-      const [usersResult, profilesResult] = await Promise.all([
-        supabase.from('users').select('id, email, username, created_at').in('id', friendIds),
-        supabase.from('profiles').select('id, email, username, full_name, avatar_url, created_at').in('id', friendIds),
-      ]);
+      const usersResult = await supabase
+        .from('users')
+        .select('id, email, username, avatar_url, created_at')
+        .in('id', friendIds);
 
       const profileMap = {};
       if (Array.isArray(usersResult.data)) {
         usersResult.data.forEach((row) => {
           if (row?.id) profileMap[row.id] = row;
-        });
-      }
-      if (Array.isArray(profilesResult.data)) {
-        profilesResult.data.forEach((row) => {
-          if (row?.id) {
-            profileMap[row.id] = { ...(profileMap[row.id] || {}), ...row };
-          }
         });
       }
 
@@ -712,14 +705,14 @@ export default function Dashboard({ initialActive = "Task" }) {
       let fromName = 'A friend';
 
       if (latest?.sender_id) {
-        const [userResult, profileResult] = await Promise.all([
-          supabase.from('users').select('id, username, email').eq('id', latest.sender_id).maybeSingle(),
-          supabase.from('profiles').select('id, full_name').eq('id', latest.sender_id).maybeSingle(),
-        ]);
+        const userResult = await supabase
+          .from('users')
+          .select('id, username, email')
+          .eq('id', latest.sender_id)
+          .maybeSingle();
 
-        const profileRow = profileResult.data || {};
         const userRow = userResult.data || {};
-        fromName = profileRow.full_name || userRow.username || userRow.email || fromName;
+        fromName = userRow.username || userRow.email || fromName;
       }
 
       setNudgeReceivedModal({

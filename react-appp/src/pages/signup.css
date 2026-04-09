@@ -3,6 +3,8 @@
     margin: 0 auto;
     padding: 1.5rem;
     margin-top: 1.5rem;
+    min-height: 100vh;
+    box-sizing: border-box;
 }
 
 @media (max-width: 640px) {
@@ -69,12 +71,14 @@
     font-weight: 500;
     color: #746455;
     text-align: center;
+    margin-bottom: 0.35rem;
 }
 
 .signup-input-wrapper {
     width: 100%;
     max-width: 22rem;
     position: relative;
+    margin: 0 auto;
 }
 
 .password-input-wrapper {
@@ -94,13 +98,13 @@
     font-size: 1rem;
     font-family: 'Afacad', sans-serif;
     color: #746455;
-    outline: 1px solid #d1d5db;
-    outline-offset: -1px;
+    border: 1px solid #b5a79a;
+    outline: none;
     box-sizing: border-box;
-    width: 100%;
-    min-width: 18rem;
-    max-width: 24rem;
-    margin: 0 auto;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .signup-input::placeholder {
@@ -115,9 +119,8 @@
 }
 
 .signup-input:focus {
-    background-color: transparent;
-    outline: 1px solid #99836F;
-    outline-offset: -1px;
+    border-color: #99836F;
+    box-shadow: 0 0 0 3px rgba(153, 131, 111, 0.16);
 }
 
 .signup-input:-webkit-autofill,

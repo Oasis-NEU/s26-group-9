@@ -136,7 +136,7 @@ export default function Login() {
                             </div>
                         </div>
 
-                        <div>
+                        <div className="login-button-wrapper">
                             <button
                                 type="submit"
                                 className="login-submit-button"

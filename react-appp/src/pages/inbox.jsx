@@ -78,21 +78,14 @@ export default function Inbox() {
         let profileMap = {};
 
         if (senderIds.length > 0) {
-            const [usersResult, profilesResult] = await Promise.all([
-                supabase.from('users').select('id, email, username, created_at').in('id', senderIds),
-                supabase.from('profiles').select('id, email, username, created_at').in('id', senderIds),
-            ]);
-
+            const usersResult = await supabase
+                .from('users')
+                .select('id, email, username, avatar_url, created_at')
+                .in('id', senderIds);
             const userRows = Array.isArray(usersResult.data) ? usersResult.data : [];
-            const profileRows = Array.isArray(profilesResult.data) ? profilesResult.data : [];
 
             userRows.forEach((row) => {
                 profileMap[row.id] = row;
-            });
-            profileRows.forEach((row) => {
-                if (!profileMap[row.id]) {
-                    profileMap[row.id] = row;
-                }
             });
         }
 

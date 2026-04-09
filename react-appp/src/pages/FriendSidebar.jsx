@@ -195,16 +195,6 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
     const rows = userRows || [];
     // Only filter out the current user by email — everything else is handled by button state
     allUsers = rows.filter((u) => u.email !== userEmail && !relatedUserIds.has(u.id));
-
-    if (rows.length === 0) {
-      const { data: profRows } = await supabase
-        .from("profiles")
-        .select("id, email, username, created_at")
-        .limit(100);
-      if (profRows) {
-        allUsers = profRows.filter((u) => u.email !== userEmail && !relatedUserIds.has(u.id));
-      }
-    }
     setDiscoverUsers(allUsers);
 
     // Load accepted friends profiles
@@ -215,16 +205,10 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
       let friendMap = {};
       const { data: fRows } = await supabase
         .from("users")
-        .select("id, email, username, created_at")
+        .select("id, email, username, avatar_url, created_at")
         .in("id", friendIds);
       if (fRows?.length > 0) {
         fRows.forEach((p) => { friendMap[p.id] = p; });
-      } else {
-        const { data: fpRows } = await supabase
-          .from("profiles")
-          .select("id, email, username, created_at")
-          .in("id", friendIds);
-        if (fpRows) fpRows.forEach((p) => { friendMap[p.id] = p; });
       }
       setFriends(
         accepted.map((f) => {
@@ -243,16 +227,10 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
     if (incomingIds.length > 0) {
       const { data: rows } = await supabase
         .from("users")
-        .select("id, email, username, created_at")
+        .select("id, email, username, avatar_url, created_at")
         .in("id", incomingIds);
       if (rows?.length > 0) {
         rows.forEach((p) => { profileMap[p.id] = p; });
-      } else {
-        const { data: profRows } = await supabase
-          .from("profiles")
-          .select("id, email, username, created_at")
-          .in("id", incomingIds);
-        if (profRows) profRows.forEach((p) => { profileMap[p.id] = p; });
       }
     }
 

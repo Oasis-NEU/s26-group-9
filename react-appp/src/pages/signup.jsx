@@ -28,6 +28,9 @@ export default function Signup() {
         setFormSuccess('');
 
         const formData = new FormData(event.currentTarget);
+        const firstName = formData.get('name')?.toString().trim() || '';
+        const lastName = formData.get('lname')?.toString().trim() || '';
+        const phoneNumber = formData.get('number')?.toString().trim() || '';
         const email = formData.get('email')?.toString().trim();
         const password = formData.get('password')?.toString() || '';
         const confirmPassword = formData.get('confirmPassword')?.toString() || '';
@@ -43,12 +46,43 @@ export default function Signup() {
         }
 
         setIsSubmitting(true);
-        const { error } = await supabase.auth.signUp({ email, password });
+        const fullName = `${firstName} ${lastName}`.trim();
+        const username = email?.split('@')[0] || null;
+
+        const { data: signUpData, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName || null,
+                },
+            },
+        });
         setIsSubmitting(false);
 
         if (error) {
             setFormError(error.message);
             return;
+        }
+
+        const authUserId = signUpData?.user?.id || null;
+
+        if (authUserId) {
+            const { error: userUpsertError } = await supabase
+                .from('users')
+                .upsert({
+                    id: authUserId,
+                    email,
+                    username,
+                    full_name: fullName || null,
+                    first_name: firstName || null,
+                    last_name: lastName || null,
+                    phone_number: phoneNumber || null,
+                }, { onConflict: 'id' });
+
+            if (userUpsertError) {
+                setFormError(userUpsertError.message || 'Account created, but profile details could not be saved yet.');
+            }
         }
 
         setFormSuccess('Account created. Check your email to verify your account.');
