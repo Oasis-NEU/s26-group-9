@@ -3,11 +3,138 @@ import { Bell, UserPlus, CheckCircle, Zap, X, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import './inbox.css';
 
+const NUDGE_STORAGE_PREFIX = 'productivitea:nudges:';
+
+function getNudgeStorageKey(userId) {
+    return `${NUDGE_STORAGE_PREFIX}${userId}`;
+}
+
+function readStoredNudges(userId) {
+    if (typeof window === 'undefined' || !userId) return [];
+
+    try {
+        const rawValue = window.localStorage.getItem(getNudgeStorageKey(userId));
+        const parsed = rawValue ? JSON.parse(rawValue) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function markStoredNudgeRead(userId, notificationId) {
+    if (typeof window === 'undefined' || !userId || !notificationId) return;
+
+    const next = readStoredNudges(userId).map((item) => (
+        item.id === notificationId ? { ...item, read: true } : item
+    ));
+    window.localStorage.setItem(getNudgeStorageKey(userId), JSON.stringify(next));
+}
+
 export default function Inbox() {
     const [notifications, setNotifications] = useState([]);
     const [filter, setFilter] = useState('all');
     const [isLoading, setIsLoading] = useState(true);
     const [actionMessage, setActionMessage] = useState('');
+
+    async function loadInboxNotifications() {
+        setIsLoading(true);
+
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user || null;
+        if (!user) {
+            setNotifications([]);
+            setIsLoading(false);
+            return;
+        }
+
+        const [friendRequestsResult] = await Promise.all([
+            supabase
+                .from('friendships')
+                .select('*')
+                .eq('friend_id', user.id)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false }),
+        ]);
+
+        const [friendshipsData, friendshipsError] = [friendRequestsResult.data, friendRequestsResult.error];
+
+        if (friendshipsError) {
+            setActionMessage(friendshipsError.message || 'Could not load friend requests.');
+            setNotifications([]);
+            setIsLoading(false);
+            return;
+        }
+
+        const localNudges = readStoredNudges(user.id);
+
+        const pendingRequests = Array.isArray(friendshipsData) ? friendshipsData : [];
+        const nudgeRows = localNudges;
+
+        const senderIds = [
+            ...pendingRequests.map((request) => request.user_id).filter(Boolean),
+            ...nudgeRows.map((row) => row.sender_id || row.senderId).filter(Boolean),
+        ];
+
+        let profileMap = {};
+
+        if (senderIds.length > 0) {
+            const [usersResult, profilesResult] = await Promise.all([
+                supabase.from('users').select('id, email, username, created_at').in('id', senderIds),
+                supabase.from('profiles').select('id, email, username, created_at').in('id', senderIds),
+            ]);
+
+            const userRows = Array.isArray(usersResult.data) ? usersResult.data : [];
+            const profileRows = Array.isArray(profilesResult.data) ? profilesResult.data : [];
+
+            userRows.forEach((row) => {
+                profileMap[row.id] = row;
+            });
+            profileRows.forEach((row) => {
+                if (!profileMap[row.id]) {
+                    profileMap[row.id] = row;
+                }
+            });
+        }
+
+        const friendRequestNotifications = pendingRequests.map((request) => {
+            const profile = profileMap[request.user_id] || {};
+            const name = displayName(profile);
+            return {
+                id: request.id,
+                friendshipId: request.id,
+                type: 'friend_request',
+                actionable: true,
+                read: false,
+                from: name,
+                fromInitials: toInitials(name),
+                message: 'sent you a friend request.',
+                timestamp: request.created_at ? new Date(request.created_at).toLocaleString() : 'Just now',
+                senderId: request.user_id,
+                senderProfile: profile,
+            };
+        });
+
+        const nudgeNotifications = nudgeRows.map((row) => {
+            const senderId = row.sender_id || row.senderId;
+            const profile = profileMap[senderId] || {};
+            const name = displayName(profile);
+            return {
+                id: row.id,
+                type: 'nudge',
+                actionable: false,
+                read: Boolean(row.read),
+                from: name,
+                fromInitials: toInitials(name),
+                message: row.message || 'nudged you.',
+                timestamp: row.timestamp ? new Date(row.timestamp).toLocaleString() : 'Just now',
+                senderId,
+                senderProfile: profile,
+            };
+        });
+
+        setNotifications([...nudgeNotifications, ...friendRequestNotifications]);
+        setIsLoading(false);
+    }
 
     const filteredNotifications = useMemo(
         () => notifications.filter((n) => filter === 'all' || n.type === filter),
@@ -17,78 +144,7 @@ export default function Inbox() {
     const unreadCount = notifications.filter((n) => !n.read).length;
 
     useEffect(() => {
-        async function loadFriendRequests() {
-            setIsLoading(true);
-
-            const { data: authData } = await supabase.auth.getUser();
-            const user = authData?.user || null;
-            if (!user) {
-                setNotifications([]);
-                setIsLoading(false);
-                return;
-            }
-
-            const { data: friendshipsData, error } = await supabase
-                .from('friendships')
-                .select('*')
-                .eq('friend_id', user.id)
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                setActionMessage(error.message || 'Could not load friend requests.');
-                setNotifications([]);
-                setIsLoading(false);
-                return;
-            }
-
-            const pendingRequests = Array.isArray(friendshipsData) ? friendshipsData : [];
-            const senderIds = pendingRequests.map((request) => request.user_id).filter(Boolean);
-            let profileMap = {};
-
-            if (senderIds.length > 0) {
-                const [usersResult, profilesResult] = await Promise.all([
-                    supabase.from('users').select('id, email, username, created_at').in('id', senderIds),
-                    supabase.from('profiles').select('id, email, username, created_at').in('id', senderIds),
-                ]);
-
-                const userRows = Array.isArray(usersResult.data) ? usersResult.data : [];
-                const profileRows = Array.isArray(profilesResult.data) ? profilesResult.data : [];
-
-                userRows.forEach((row) => {
-                    profileMap[row.id] = row;
-                });
-                profileRows.forEach((row) => {
-                    if (!profileMap[row.id]) {
-                        profileMap[row.id] = row;
-                    }
-                });
-            }
-
-            setNotifications(
-                pendingRequests.map((request) => {
-                    const profile = profileMap[request.user_id] || {};
-                    const name = displayName(profile);
-                    return {
-                        id: request.id,
-                        friendshipId: request.id,
-                        type: 'friend_request',
-                        actionable: true,
-                        read: false,
-                        from: name,
-                        fromInitials: toInitials(name),
-                        message: 'sent you a friend request.',
-                        timestamp: request.created_at ? new Date(request.created_at).toLocaleString() : 'Just now',
-                        senderId: request.user_id,
-                        senderProfile: profile,
-                    };
-                })
-            );
-
-            setIsLoading(false);
-        }
-
-        loadFriendRequests();
+        loadInboxNotifications();
     }, []);
 
     useEffect(() => {
@@ -104,7 +160,31 @@ export default function Inbox() {
     };
 
     const markAllAsRead = () => {
+        const userNudgeIds = notifications.filter((n) => n.type === 'nudge' && !n.read).map((n) => n.id);
+        if (userNudgeIds.length > 0) {
+            const currentUserIdPromise = supabase.auth.getUser().then(({ data }) => data?.user?.id || null);
+            currentUserIdPromise.then((userId) => {
+                if (userId) {
+                    userNudgeIds.forEach((notificationId) => markStoredNudgeRead(userId, notificationId));
+                }
+            });
+        }
+
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    };
+
+    const markNudgeAsRead = async (notification) => {
+        if (!notification?.id || notification.type !== 'nudge' || notification.read) {
+            return;
+        }
+
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData?.user?.id || null;
+        if (userId) {
+            markStoredNudgeRead(userId, notification.id);
+        }
+
+        setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
     };
 
     const handleAcceptFriend = async (id) => {
@@ -143,8 +223,13 @@ export default function Inbox() {
         setNotifications((prev) => prev.filter((n) => n.id !== id));
     };
 
-    const deleteNotification = (id) => {
-        setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const deleteNotification = async (notification) => {
+        if (notification?.type === 'nudge') {
+            await markNudgeAsRead(notification);
+            return;
+        }
+
+        setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
     };
 
     const getIcon = (type) => {
@@ -240,7 +325,13 @@ export default function Inbox() {
                     filteredNotifications.map((notification) => (
                         <div
                             key={notification.id}
-                            onClick={() => !notification.read && markAsRead(notification.id)}
+                            onClick={() => {
+                                if (notification.type === 'nudge') {
+                                    markNudgeAsRead(notification);
+                                } else if (!notification.read) {
+                                    markAsRead(notification.id);
+                                }
+                            }}
                             className={`inbox-notification ${notification.read ? 'read' : 'unread'
                                 }`}
                         >
@@ -294,13 +385,27 @@ export default function Inbox() {
                                                 </button>
                                             </div>
                                         )}
+
+                                    {notification.type === 'nudge' && (
+                                        <div className="inbox-actions">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    markNudgeAsRead(notification);
+                                                }}
+                                                className="inbox-btn inbox-btn--decline"
+                                            >
+                                                Mark as read
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Delete Button */}
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        deleteNotification(notification.id);
+                                        deleteNotification(notification);
                                     }}
                                     className="inbox-delete-btn"
                                 >

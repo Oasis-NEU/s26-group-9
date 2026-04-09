@@ -12,6 +12,47 @@ import Settings from './settings';
 import FriendSidebar from './FriendSidebar';
 
 const TASK_TAG_OPTIONS = ['School', 'Work', 'Personal', 'Reading', 'Coding'];
+const NUDGE_STORAGE_PREFIX = 'productivitea:nudges:';
+
+function getNudgeStorageKey(userId) {
+  return `${NUDGE_STORAGE_PREFIX}${userId}`;
+}
+
+function readStoredNudges(userId) {
+  if (typeof window === 'undefined' || !userId) return [];
+
+  try {
+    const rawValue = window.localStorage.getItem(getNudgeStorageKey(userId));
+    const parsed = rawValue ? JSON.parse(rawValue) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredNudge(notification) {
+  if (typeof window === 'undefined' || !notification?.receiverId) return;
+
+  const existing = readStoredNudges(notification.receiverId);
+  const next = [notification, ...existing.filter((item) => item.id !== notification.id)];
+  window.localStorage.setItem(getNudgeStorageKey(notification.receiverId), JSON.stringify(next));
+}
+
+function markStoredNudgeRead(userId, notificationId) {
+  if (typeof window === 'undefined' || !userId || !notificationId) return;
+
+  const next = readStoredNudges(userId).map((item) => (
+    item.id === notificationId ? { ...item, read: true } : item
+  ));
+  window.localStorage.setItem(getNudgeStorageKey(userId), JSON.stringify(next));
+}
+
+function removeStoredNudge(userId, notificationId) {
+  if (typeof window === 'undefined' || !userId || !notificationId) return;
+
+  const next = readStoredNudges(userId).filter((item) => item.id !== notificationId);
+  window.localStorage.setItem(getNudgeStorageKey(userId), JSON.stringify(next));
+}
 
 function formatMinutes(value) {
   const mins = Number.parseInt(value, 10);
@@ -348,6 +389,7 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [userName, setUserName] = useState("");
   const [friendActionMessage, setFriendActionMessage] = useState("");
   const [nudgeSentModal, setNudgeSentModal] = useState(null);
+  const [isCancellingNudge, setIsCancellingNudge] = useState(false);
   const [nudgeReceivedModal, setNudgeReceivedModal] = useState(null);
   const navigate = useNavigate();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -466,23 +508,86 @@ export default function Dashboard({ initialActive = "Task" }) {
   }, []);
 
   const handleMiniNudge = async (friendName, friendId = null) => {
-    setNudgeSentModal(friendName);
     setFriendActionMessage(`Nudge sent to ${friendName}!`);
 
     const targetId = String(friendId || '').trim();
     if (!user?.id || !targetId) return;
 
-    const { error } = await supabase
+    const localNotificationId = `local-${Date.now()}`;
+    const localNotification = {
+      id: localNotificationId,
+      senderId: user.id,
+      receiverId: targetId,
+      fromName: userName || 'A friend',
+      message: `${userName || 'A friend'} nudged you to get back to studying.`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      type: 'nudge',
+      source: 'local',
+    };
+
+    writeStoredNudge(localNotification);
+
+    const sentModalPayload = {
+      friendName,
+      targetId,
+      localNotificationId,
+      supabaseNotificationId: null,
+    };
+    setNudgeSentModal(sentModalPayload);
+
+    const { data, error } = await supabase
       .from('nudge_notifications')
       .insert({
         sender_id: user.id,
         receiver_id: targetId,
         message: `${userName || 'A friend'} nudged you to get back to studying.`,
-      });
+      })
+      .select('id')
+      .single();
 
     if (error && error.code !== '42P01') {
       console.error('Nudge send error:', error);
+      return;
     }
+
+    if (data?.id) {
+      setNudgeSentModal((current) => {
+        if (!current || current.localNotificationId !== localNotificationId) {
+          return current;
+        }
+        return {
+          ...current,
+          supabaseNotificationId: data.id,
+        };
+      });
+    }
+  };
+
+  const handleCancelSentNudge = async () => {
+    if (!nudgeSentModal || isCancellingNudge) return;
+
+    setIsCancellingNudge(true);
+
+    removeStoredNudge(nudgeSentModal.targetId, nudgeSentModal.localNotificationId);
+
+    if (nudgeSentModal.supabaseNotificationId) {
+      const { error } = await supabase
+        .from('nudge_notifications')
+        .delete()
+        .eq('id', nudgeSentModal.supabaseNotificationId)
+        .eq('sender_id', user?.id || '')
+        .eq('receiver_id', nudgeSentModal.targetId)
+        .eq('read', false);
+
+      if (error && error.code !== '42P01') {
+        console.error('Nudge cancel error:', error);
+      }
+    }
+
+    setNudgeSentModal(null);
+    setFriendActionMessage(`Nudge to ${nudgeSentModal.friendName} was canceled.`);
+    setIsCancellingNudge(false);
   };
 
   const handleOpenFriendCard = (friend) => {
@@ -497,6 +602,10 @@ export default function Dashboard({ initialActive = "Task" }) {
   }, []);
 
   const closeReceivedNudgeModal = async () => {
+    if (nudgeReceivedModal?.source === 'local') {
+      markStoredNudgeRead(user?.id, nudgeReceivedModal.id);
+    }
+
     if (nudgeReceivedModal?.id) {
       const { error } = await supabase
         .from('nudge_notifications')
@@ -556,6 +665,26 @@ export default function Dashboard({ initialActive = "Task" }) {
     let cancelled = false;
 
     const fetchNudges = async () => {
+      const localUnread = readStoredNudges(user.id).filter((item) => !item.read);
+
+      if (cancelled) return;
+
+      if (localUnread.length > 0) {
+        setUnreadNotifications(localUnread.length);
+
+        if (!nudgeReceivedModal) {
+          const latest = localUnread[0];
+          setNudgeReceivedModal({
+            id: latest.id,
+            fromName: latest.fromName || 'A friend',
+            message: latest.message || `${latest.fromName || 'A friend'} nudged you to get back to studying.`,
+            source: 'local',
+          });
+        }
+
+        return;
+      }
+
       const { data: rows, error } = await supabase
         .from('nudge_notifications')
         .select('id, sender_id, message, created_at, read')
@@ -597,15 +726,24 @@ export default function Dashboard({ initialActive = "Task" }) {
         id: latest.id,
         fromName,
         message: latest.message || `${fromName} nudged you to get back to studying.`,
+        source: 'supabase',
       });
     };
 
     fetchNudges();
-    const intervalId = setInterval(fetchNudges, 8000);
+    const intervalId = setInterval(fetchNudges, 1000);
+    const handleStorage = (event) => {
+      if (event.key === getNudgeStorageKey(user.id)) {
+        fetchNudges();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
 
     return () => {
       cancelled = true;
       clearInterval(intervalId);
+      window.removeEventListener('storage', handleStorage);
     };
   }, [user?.id, nudgeReceivedModal]);
 
@@ -1863,17 +2001,27 @@ export default function Dashboard({ initialActive = "Task" }) {
               <div className="dashboard-nudge-modal-content">
                 <h2 className="dashboard-nudge-modal-title">Nudge Sent</h2>
                 <p className="dashboard-nudge-modal-message">
-                  You sent a nudge to <strong>{nudgeSentModal}</strong>.
+                  You sent a nudge to <strong>{nudgeSentModal.friendName}</strong>.
                 </p>
-                <p className="dashboard-nudge-modal-subtitle">They will get a popup notification.</p>
+                <p className="dashboard-nudge-modal-subtitle">They will get a popup notification unless you cancel it.</p>
               </div>
-              <button
-                type="button"
-                className="dashboard-nudge-modal-close"
-                onClick={() => setNudgeSentModal(null)}
-              >
-                Got it
-              </button>
+              <div className="dashboard-nudge-modal-actions">
+                <button
+                  type="button"
+                  className="dashboard-nudge-modal-cancel"
+                  onClick={handleCancelSentNudge}
+                  disabled={isCancellingNudge}
+                >
+                  {isCancellingNudge ? 'Canceling...' : 'Cancel nudge'}
+                </button>
+                <button
+                  type="button"
+                  className="dashboard-nudge-modal-close"
+                  onClick={() => setNudgeSentModal(null)}
+                >
+                  Keep sent
+                </button>
+              </div>
             </div>
           </div>
         )}

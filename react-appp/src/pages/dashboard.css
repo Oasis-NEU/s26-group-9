@@ -1376,6 +1376,34 @@
     font-size: 0.9rem;
 }
 
+.dashboard-nudge-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.dashboard-nudge-modal-cancel {
+    border: 1px solid #b59c88;
+    border-radius: 10px;
+    background: #f2e9df;
+    color: #6f5b4b;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-family: inherit;
+}
+
+.dashboard-nudge-modal-cancel:hover:not(:disabled) {
+    background: #eadfce;
+}
+
+.dashboard-nudge-modal-cancel:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
 .dashboard-nudge-modal-close {
     border: none;
     border-radius: 10px;
