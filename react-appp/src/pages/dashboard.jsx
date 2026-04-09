@@ -9,6 +9,7 @@ import useAppData from '../hooks/useAppData';
 import './dashboard.css';
 import { supabase } from '../lib/supabase';
 import Settings from './settings';
+import FriendSidebar from './FriendSidebar';
 
 const TASK_TAG_OPTIONS = ['School', 'Work', 'Personal', 'Reading', 'Coding'];
 
@@ -1059,6 +1060,10 @@ export default function Dashboard({ initialActive = "Task" }) {
               )}
             </div>
 
+            <button type="button" className="dashboard-add-task-btn" onClick={() => setActive("Friends")} style={{ marginTop: '16px' }}>
+              Friends
+            </button>
+
             <h2 className="dashboard-friends-title">My Friends</h2>
             <div className="dashboard-friend-list">
               {friends.slice(0, 4).map((friend) => (
@@ -1488,6 +1493,8 @@ export default function Dashboard({ initialActive = "Task" }) {
           {active === "Inbox" && (
             <Inbox />
           )}
+
+          {active === "Friends" && <FriendSidebar />}
 
           {active === "AddTask" && (
             <AddTaskPage
