@@ -16,7 +16,8 @@ function toHandle(user) {
 }
 
 function displayName(user) {
-  return user?.full_name || user?.username || user?.name || user?.email || "Unknown";
+  const emailHandle = user?.email ? String(user.email).split("@")[0] : "";
+  return user?.full_name || user?.username || user?.name || emailHandle || "Unknown";
 }
 
 function toJoinDate(createdAt) {
