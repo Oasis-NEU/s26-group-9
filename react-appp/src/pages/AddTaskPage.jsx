@@ -250,7 +250,7 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
       priority: String(priority || '').toLowerCase(),
       due_date: parsedDueDate,
       due_time: parsedDueTime,
-      tag: selectedTags[0] || null,
+      tags: selectedTags.length > 0 ? selectedTags : null,
     };
 
     const createTaskResult = await insertTaskWithFallback(payload);
