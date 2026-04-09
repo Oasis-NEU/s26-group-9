@@ -55,6 +55,12 @@
     color: #5d4838;
 }
 
+.inbox-status-message {
+    margin: 0 0 1rem;
+    color: #746455;
+    font-size: 0.9rem;
+}
+
 .inbox-filters {
     display: flex;
     gap: 0.5rem;

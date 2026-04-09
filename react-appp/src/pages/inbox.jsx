@@ -1,16 +1,101 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Bell, UserPlus, CheckCircle, Zap, X, Check } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import './inbox.css';
 
 export default function Inbox() {
     const [notifications, setNotifications] = useState([]);
     const [filter, setFilter] = useState('all');
+    const [isLoading, setIsLoading] = useState(true);
+    const [actionMessage, setActionMessage] = useState('');
 
-    const filteredNotifications = notifications.filter(
-        (n) => filter === 'all' || n.type === filter
+    const filteredNotifications = useMemo(
+        () => notifications.filter((n) => filter === 'all' || n.type === filter),
+        [notifications, filter]
     );
 
     const unreadCount = notifications.filter((n) => !n.read).length;
+
+    useEffect(() => {
+        async function loadFriendRequests() {
+            setIsLoading(true);
+
+            const { data: authData } = await supabase.auth.getUser();
+            const user = authData?.user || null;
+            if (!user) {
+                setNotifications([]);
+                setIsLoading(false);
+                return;
+            }
+
+            const { data: friendshipsData, error } = await supabase
+                .from('friendships')
+                .select('*')
+                .eq('friend_id', user.id)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                setActionMessage(error.message || 'Could not load friend requests.');
+                setNotifications([]);
+                setIsLoading(false);
+                return;
+            }
+
+            const pendingRequests = Array.isArray(friendshipsData) ? friendshipsData : [];
+            const senderIds = pendingRequests.map((request) => request.user_id).filter(Boolean);
+            let profileMap = {};
+
+            if (senderIds.length > 0) {
+                const [usersResult, profilesResult] = await Promise.all([
+                    supabase.from('users').select('id, email, username, created_at').in('id', senderIds),
+                    supabase.from('profiles').select('id, email, username, created_at').in('id', senderIds),
+                ]);
+
+                const userRows = Array.isArray(usersResult.data) ? usersResult.data : [];
+                const profileRows = Array.isArray(profilesResult.data) ? profilesResult.data : [];
+
+                userRows.forEach((row) => {
+                    profileMap[row.id] = row;
+                });
+                profileRows.forEach((row) => {
+                    if (!profileMap[row.id]) {
+                        profileMap[row.id] = row;
+                    }
+                });
+            }
+
+            setNotifications(
+                pendingRequests.map((request) => {
+                    const profile = profileMap[request.user_id] || {};
+                    const name = displayName(profile);
+                    return {
+                        id: request.id,
+                        friendshipId: request.id,
+                        type: 'friend_request',
+                        actionable: true,
+                        read: false,
+                        from: name,
+                        fromInitials: toInitials(name),
+                        message: 'sent you a friend request.',
+                        timestamp: request.created_at ? new Date(request.created_at).toLocaleString() : 'Just now',
+                        senderId: request.user_id,
+                        senderProfile: profile,
+                    };
+                })
+            );
+
+            setIsLoading(false);
+        }
+
+        loadFriendRequests();
+    }, []);
+
+    useEffect(() => {
+        if (!actionMessage) return;
+        const t = setTimeout(() => setActionMessage(''), 2500);
+        return () => clearTimeout(t);
+    }, [actionMessage]);
 
     const markAsRead = (id) => {
         setNotifications((prev) =>
@@ -22,11 +107,39 @@ export default function Inbox() {
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     };
 
-    const handleAcceptFriend = (id) => {
+    const handleAcceptFriend = async (id) => {
+        const request = notifications.find((n) => n.id === id);
+        if (!request?.friendshipId) return;
+
+        const { error } = await supabase
+            .from('friendships')
+            .update({ status: 'accepted' })
+            .eq('id', request.friendshipId);
+
+        if (error) {
+            setActionMessage(error.message || 'Could not accept friend request.');
+            return;
+        }
+
+        setActionMessage(`Now friends with ${request.from}!`);
         setNotifications((prev) => prev.filter((n) => n.id !== id));
     };
 
-    const handleDeclineFriend = (id) => {
+    const handleDeclineFriend = async (id) => {
+        const request = notifications.find((n) => n.id === id);
+        if (!request?.friendshipId) return;
+
+        const { error } = await supabase
+            .from('friendships')
+            .delete()
+            .eq('id', request.friendshipId);
+
+        if (error) {
+            setActionMessage(error.message || 'Could not decline friend request.');
+            return;
+        }
+
+        setActionMessage('Friend request declined.');
         setNotifications((prev) => prev.filter((n) => n.id !== id));
     };
 
@@ -79,6 +192,10 @@ export default function Inbox() {
                 )}
             </div>
 
+            {actionMessage && (
+                <p className="inbox-status-message">{actionMessage}</p>
+            )}
+
             {/* Filter Tabs */}
             <div className="inbox-filters">
                 <button
@@ -113,7 +230,9 @@ export default function Inbox() {
 
             {/* Notifications List */}
             <div className="inbox-notifications">
-                {filteredNotifications.length === 0 ? (
+                {isLoading ? (
+                    <div className="inbox-empty">Loading friend requests...</div>
+                ) : filteredNotifications.length === 0 ? (
                     <div className="inbox-empty">
                         No notifications in this category
                     </div>

@@ -49,7 +49,7 @@
 }
 
 .dashboard-home-link:hover .dashboard-home-logo {
-    opacity: 0.9;
+    background: #8f5a35;
 }
 
 .dashboard-sidebar {
@@ -215,6 +215,16 @@
     gap: 12px;
 }
 
+.dashboard-friend-toast {
+    margin: 6px 0 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(210, 145, 93, 0.18);
+    color: #f2e8df;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 .dashboard-friend-item {
     display: flex;
     align-items: center;
@@ -255,6 +265,12 @@
     font-size: 0.74rem;
     font-weight: 700;
     cursor: pointer;
+}
+
+.dashboard-nudge-btn:hover:not(:disabled),
+.dashboard-nudge-btn:focus-visible {
+    background: #a86d42;
+    outline: none;
 }
 
 .dashboard-content {

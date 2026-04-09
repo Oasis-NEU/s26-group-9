@@ -101,10 +101,10 @@ create policy if not exists "friendships_owner_insert" on public.friendships
 for insert with check (auth.uid() = user_id);
 
 create policy if not exists "friendships_owner_update" on public.friendships
-for update using (auth.uid() = user_id);
+for update using (auth.uid() = user_id or auth.uid() = friend_id);
 
 create policy if not exists "friendships_owner_delete" on public.friendships
-for delete using (auth.uid() = user_id);
+for delete using (auth.uid() = user_id or auth.uid() = friend_id);
 
 create policy if not exists "notification_settings_select_own" on public.notification_settings
 for select using (auth.uid() = user_id);

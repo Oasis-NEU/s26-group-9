@@ -229,6 +229,66 @@ function serializeTaskNotes(notes) {
   return JSON.stringify(notes);
 }
 
+function normalizeFriendSessions(rows = []) {
+  return rows.map((row) => ({
+    ...row,
+    started_at: row?.started_at ?? row?.start_time ?? row?.created_at ?? null,
+    duration_mins: Number.parseInt(row?.duration_mins ?? row?.duration_minutes ?? row?.minutes ?? row?.duration ?? 0, 10) || 0,
+  }));
+}
+
+function getFriendActivitySummary(tasks = [], sessions = []) {
+  const taskRows = Array.isArray(tasks) ? tasks : [];
+  const sessionRows = Array.isArray(sessions) ? sessions : [];
+
+  const inProgressTasks = taskRows.filter((task) => {
+    const status = String(task?.status || '').toLowerCase();
+    return status === 'in_progress' || status === 'active';
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const minutesByTaskId = new Map();
+
+  sessionRows.forEach((session) => {
+    const startedAt = session?.started_at ? new Date(session.started_at) : null;
+    if (!startedAt || Number.isNaN(startedAt.getTime())) return;
+    if (startedAt < today) return;
+
+    const taskId = session?.task_id || session?.task;
+    if (!taskId) return;
+
+    const duration = Number.parseInt(session?.duration_mins ?? 0, 10);
+    const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+    minutesByTaskId.set(taskId, (minutesByTaskId.get(taskId) || 0) + safeDuration);
+  });
+
+  let activeTask = null;
+  let activeMinutes = 0;
+
+  inProgressTasks.forEach((task) => {
+    const taskMinutes = minutesByTaskId.get(task.id) || 0;
+    if (!activeTask || taskMinutes > activeMinutes) {
+      activeTask = task;
+      activeMinutes = taskMinutes;
+    }
+  });
+
+  if (!activeTask && taskRows.length > 0) {
+    activeTask = taskRows[0];
+    activeMinutes = minutesByTaskId.get(activeTask.id) || Number.parseInt(activeTask?.time_spent_mins ?? 0, 10) || 0;
+  }
+
+  if (!activeTask) {
+    return { label: 'Idle', kind: 'idle' };
+  }
+
+  return {
+    label: `${activeTask.title || 'Untitled task'} · ${formatMinutes(activeMinutes)}`,
+    kind: activeMinutes > 0 ? 'active' : 'idle',
+  };
+}
+
 function parseTaskTags(task) {
   const fromTags = task?.tags;
   const parsed = [];
@@ -281,18 +341,139 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [isSavingDueDate, setIsSavingDueDate] = useState(false);
   const [isDeletingTask, setIsDeletingTask] = useState(false);
   const [isDeleteTaskConfirmOpen, setIsDeleteTaskConfirmOpen] = useState(false);
-  const friends = friendships.map(f => ({
-    id: f.friend_id || f.id,
-    name: f.friend_name || f.name || 'Friend',
-    status: f.status || 'Active'
-  }));
+  const [friendProfiles, setFriendProfiles] = useState({});
+  const [friendActivity, setFriendActivity] = useState({});
   const [userName, setUserName] = useState("");
+  const [friendActionMessage, setFriendActionMessage] = useState("");
   const navigate = useNavigate();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [optimisticSessions, setOptimisticSessions] = useState([]);
+
+  const acceptedFriendships = useMemo(() => {
+    return (Array.isArray(friendships) ? friendships : []).filter((friendship) => friendship.status === 'accepted');
+  }, [friendships]);
+
+  useEffect(() => {
+    async function loadFriendProfiles() {
+      if (!user?.id || acceptedFriendships.length === 0) {
+        setFriendProfiles({});
+        return;
+      }
+
+      const friendIds = [...new Set(
+        acceptedFriendships
+          .map((friendship) => (friendship.user_id === user.id ? friendship.friend_id : friendship.user_id))
+          .filter(Boolean)
+          .map((friendId) => String(friendId))
+      )];
+
+      if (friendIds.length === 0) {
+        setFriendProfiles({});
+        return;
+      }
+
+      const [usersResult, profilesResult] = await Promise.all([
+        supabase.from('users').select('id, email, username, created_at').in('id', friendIds),
+        supabase.from('profiles').select('id, email, username, full_name, avatar_url, created_at').in('id', friendIds),
+      ]);
+
+      const profileMap = {};
+      if (Array.isArray(usersResult.data)) {
+        usersResult.data.forEach((row) => {
+          if (row?.id) profileMap[row.id] = row;
+        });
+      }
+      if (Array.isArray(profilesResult.data)) {
+        profilesResult.data.forEach((row) => {
+          if (row?.id) {
+            profileMap[row.id] = { ...(profileMap[row.id] || {}), ...row };
+          }
+        });
+      }
+
+      setFriendProfiles(profileMap);
+    }
+
+    loadFriendProfiles();
+  }, [acceptedFriendships, user?.id]);
+
+  useEffect(() => {
+    async function loadFriendActivity() {
+      if (!user?.id || acceptedFriendships.length === 0) {
+        setFriendActivity({});
+        return;
+      }
+
+      const friendIds = [...new Set(
+        acceptedFriendships
+          .map((friendship) => (friendship.user_id === user.id ? friendship.friend_id : friendship.user_id))
+          .filter(Boolean)
+          .map((friendId) => String(friendId))
+      )];
+
+      const entries = await Promise.all(friendIds.map(async (friendId) => {
+        const [tasksResult, studySessionsResult] = await Promise.all([
+          supabase.from('tasks').select('*').eq('user_id', friendId).order('created_at', { ascending: false }),
+          supabase.from('study_sessions').select('*').eq('user_id', friendId).order('created_at', { ascending: false }),
+        ]);
+
+        let sessionRows = Array.isArray(studySessionsResult.data) ? studySessionsResult.data : [];
+        if ((studySessionsResult.error || sessionRows.length === 0)) {
+          const fallbackSessions = await supabase
+            .from('sessions')
+            .select('*')
+            .eq('user_id', friendId)
+            .order('created_at', { ascending: false });
+
+          if (!fallbackSessions.error) {
+            sessionRows = Array.isArray(fallbackSessions.data) ? fallbackSessions.data : [];
+          }
+        }
+
+        const summary = getFriendActivitySummary(
+          Array.isArray(tasksResult.data) ? tasksResult.data : [],
+          normalizeFriendSessions(sessionRows)
+        );
+
+        return [friendId, summary];
+      }));
+
+      setFriendActivity(Object.fromEntries(entries));
+    }
+
+    loadFriendActivity();
+  }, [acceptedFriendships, user?.id]);
+
+  useEffect(() => {
+    if (!friendActionMessage) return;
+    const timeoutId = setTimeout(() => setFriendActionMessage(''), 2500);
+    return () => clearTimeout(timeoutId);
+  }, [friendActionMessage]);
+
+  const handleMiniNudge = (friendName) => {
+    setFriendActionMessage(`Nudge sent to ${friendName}!`);
+  };
+
+  const friends = acceptedFriendships.map((friendship) => {
+    const otherId = friendship.user_id === user?.id ? friendship.friend_id : friendship.user_id;
+    const profile = friendProfiles[otherId] || {};
+    const name = profile.full_name || profile.username || profile.email || 'Friend';
+    const friendStatus = friendActivity[String(otherId)] || { label: 'Loading...', kind: 'loading' };
+
+    return {
+      friendshipId: friendship.id,
+      id: otherId,
+      userId: otherId,
+      name,
+      avatarUrl: profile.avatar_url || '',
+      status: friendship.status || 'accepted',
+      activity: friendStatus,
+      ...profile,
+    };
+  });
 
   const panelSessions = useMemo(() => {
     const allSessions = [...optimisticSessions, ...(Array.isArray(sessions) ? sessions : [])];
@@ -1065,14 +1246,27 @@ export default function Dashboard({ initialActive = "Task" }) {
             </button>
 
             <h2 className="dashboard-friends-title">My Friends</h2>
+            {friendActionMessage && (
+              <div className="dashboard-friend-toast">{friendActionMessage}</div>
+            )}
             <div className="dashboard-friend-list">
               {friends.slice(0, 4).map((friend) => (
                 <div key={friend.id} className="dashboard-friend-item">
                   <div className="dashboard-friend-avatar">{toInitials(friend.name)}</div>
                   <div className="dashboard-friend-body">
                     <h3>{friend.name}</h3>
-                    <p>{friend.status}</p>
+                      <p>{friend.activity?.label || 'Idle'}</p>
                   </div>
+                  {friend.activity?.kind === 'idle' && (
+                    <button
+                      type="button"
+                      className="dashboard-nudge-btn"
+                      onClick={() => handleMiniNudge(friend.name)}
+                      title={`Nudge ${friend.name}`}
+                    >
+                      Nudge
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

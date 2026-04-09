@@ -19,7 +19,7 @@ function toHandle(user) {
 }
 
 function displayName(user) {
-  return user?.username || user?.email || "Unknown";
+  return user?.full_name || user?.username || user?.name || user?.email || "Unknown";
 }
 
 function toJoinDate(createdAt) {
@@ -216,6 +216,12 @@ export default function FriendSidebar() {
 
     const friendships = friendshipsData || [];
 
+    const relatedUserIds = new Set(
+      friendships
+        .map((f) => (f.user_id === userId ? f.friend_id : f.user_id))
+        .filter(Boolean)
+    );
+
     const accepted = friendships.filter((f) => f.status === "accepted");
     const incoming = friendships.filter(
       (f) => f.status === "pending" && f.friend_id === userId
@@ -228,7 +234,7 @@ export default function FriendSidebar() {
 
     const rows = userRows || [];
     // Only filter out the current user by email — everything else is handled by button state
-    allUsers = rows.filter((u) => u.email !== userEmail);
+    allUsers = rows.filter((u) => u.email !== userEmail && !relatedUserIds.has(u.id));
 
     if (rows.length === 0) {
       const { data: profRows } = await supabase
@@ -236,7 +242,7 @@ export default function FriendSidebar() {
         .select("id, email, username, created_at")
         .limit(100);
       if (profRows) {
-        allUsers = profRows.filter((u) => u.email !== userEmail);
+        allUsers = profRows.filter((u) => u.email !== userEmail && !relatedUserIds.has(u.id));
       }
     }
     setDiscoverUsers(allUsers);
@@ -368,8 +374,15 @@ export default function FriendSidebar() {
       .from("friendships")
       .update({ status: "accepted" })
       .eq("id", req.friendshipId);
-    setActionMessage(error ? "Could not accept." : `Now friends with ${req.name}!`);
-    if (!error) await loadData(myPublicId, myEmail);
+
+    if (error) {
+      console.error("Friend accept error:", error);
+      setActionMessage(error.message || "Could not accept.");
+      return;
+    }
+
+    setActionMessage(`Now friends with ${req.name}!`);
+    await loadData(myPublicId, myEmail);
   }
 
   async function handleDecline(req) {
@@ -377,11 +390,15 @@ export default function FriendSidebar() {
       .from("friendships")
       .delete()
       .eq("id", req.friendshipId);
-    setActionMessage(error ? "Could not decline." : "Request declined.");
-    if (!error)
-      setPendingRequests((prev) =>
-        prev.filter((r) => r.friendshipId !== req.friendshipId)
-      );
+
+    if (error) {
+      console.error("Friend decline error:", error);
+      setActionMessage(error.message || "Could not decline.");
+      return;
+    }
+
+    setActionMessage("Request declined.");
+    await loadData(myPublicId, myEmail);
   }
 
   const filteredUsers = searchQuery.trim()
