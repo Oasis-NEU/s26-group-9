@@ -6,7 +6,7 @@
 .fs-title {
   font-size: 2rem;
   font-weight: 800;
-  color: #2d1f0f;
+  color: #99836f;
   margin: 0 0 6px;
 }
 
@@ -54,7 +54,7 @@
 }
 
 .fs-tab--active {
-  color: #2d1f0f;
+  color: #99836f;
   border-bottom-color: #c07848;
 }
 
@@ -147,7 +147,7 @@
 .fs-item-name {
   margin: 0;
   font-weight: 700;
-  color: #2d1f0f;
+  color: #99836f;
   font-size: 1rem;
 }
 
@@ -313,7 +313,7 @@
 }
 
 .fs-nudge-btn:hover {
-  background: #a8652f;
+  background: #d39363;
 }
 
 /* Clickable friend card */
@@ -371,7 +371,7 @@
   margin: 0 0 4px;
   font-size: 1.4rem;
   font-weight: 800;
-  color: #2d1f0f;
+  color: #99836f;
 }
 
 .fs-profile-sub {
@@ -399,7 +399,7 @@
   margin: 0 0 6px;
   font-size: 1.9rem;
   font-weight: 700;
-  color: #2d1f0f;
+  color: #99836f;
   line-height: 1.15;
 }
 
@@ -413,7 +413,7 @@
 .fs-section-heading {
   font-size: 0.75rem;
   font-weight: 800;
-  color: #2d1f0f;
+  color: #99836f;
   letter-spacing: 0.08em;
   margin: 0 0 10px;
 }
@@ -442,7 +442,7 @@
 .fs-active-name {
   margin: 0 0 4px;
   font-weight: 700;
-  color: #2d1f0f;
+  color: #99836f;
   font-size: 1rem;
 }
 

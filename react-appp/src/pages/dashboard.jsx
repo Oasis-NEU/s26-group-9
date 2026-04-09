@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Bell, Play, Square, Clock, CheckCircle2, Trash2 } from 'lucide-react';
 import ActivityPanel from "./activitypanel";
@@ -343,8 +343,12 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [isDeleteTaskConfirmOpen, setIsDeleteTaskConfirmOpen] = useState(false);
   const [friendProfiles, setFriendProfiles] = useState({});
   const [friendActivity, setFriendActivity] = useState({});
+  const [friendsTargetId, setFriendsTargetId] = useState(null);
+  const [selectedFriendPanelData, setSelectedFriendPanelData] = useState(null);
   const [userName, setUserName] = useState("");
   const [friendActionMessage, setFriendActionMessage] = useState("");
+  const [nudgeSentModal, setNudgeSentModal] = useState(null);
+  const [nudgeReceivedModal, setNudgeReceivedModal] = useState(null);
   const navigate = useNavigate();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -355,7 +359,6 @@ export default function Dashboard({ initialActive = "Task" }) {
   const acceptedFriendships = useMemo(() => {
     return (Array.isArray(friendships) ? friendships : []).filter((friendship) => friendship.status === 'accepted');
   }, [friendships]);
-
   useEffect(() => {
     async function loadFriendProfiles() {
       if (!user?.id || acceptedFriendships.length === 0) {
@@ -453,8 +456,60 @@ export default function Dashboard({ initialActive = "Task" }) {
     return () => clearTimeout(timeoutId);
   }, [friendActionMessage]);
 
-  const handleMiniNudge = (friendName) => {
+  useEffect(() => {
+    async function loadUser() {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData?.user) return;
+      setUserName(authData.user.user_metadata?.full_name || authData.user.email || '');
+    }
+    loadUser();
+  }, []);
+
+  const handleMiniNudge = async (friendName, friendId = null) => {
+    setNudgeSentModal(friendName);
     setFriendActionMessage(`Nudge sent to ${friendName}!`);
+
+    const targetId = String(friendId || '').trim();
+    if (!user?.id || !targetId) return;
+
+    const { error } = await supabase
+      .from('nudge_notifications')
+      .insert({
+        sender_id: user.id,
+        receiver_id: targetId,
+        message: `${userName || 'A friend'} nudged you to get back to studying.`,
+      });
+
+    if (error && error.code !== '42P01') {
+      console.error('Nudge send error:', error);
+    }
+  };
+
+  const handleOpenFriendCard = (friend) => {
+    const targetId = String(friend?.userId || friend?.id || '').trim();
+    if (!targetId) return;
+    setFriendsTargetId(targetId);
+    setActive('Friends');
+  };
+
+  const handleSelectedFriendChange = useCallback((nextData) => {
+    setSelectedFriendPanelData(nextData || null);
+  }, []);
+
+  const closeReceivedNudgeModal = async () => {
+    if (nudgeReceivedModal?.id) {
+      const { error } = await supabase
+        .from('nudge_notifications')
+        .update({ read: true })
+        .eq('id', nudgeReceivedModal.id);
+
+      if (error && error.code !== '42P01') {
+        console.error('Nudge read error:', error);
+      }
+    }
+
+    setNudgeReceivedModal(null);
+    setUnreadNotifications((prev) => Math.max(0, prev - 1));
   };
 
   const friends = acceptedFriendships.map((friendship) => {
@@ -496,13 +551,63 @@ export default function Dashboard({ initialActive = "Task" }) {
   }, [optimisticSessions, sessions]);
 
   useEffect(() => {
-    async function loadUser() {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (authError || !authData?.user) return;
-      setUserName(authData.user.user_metadata?.full_name || authData.user.email || "");
-    }
-    loadUser();
-  }, []);
+    if (!user?.id) return undefined;
+
+    let cancelled = false;
+
+    const fetchNudges = async () => {
+      const { data: rows, error } = await supabase
+        .from('nudge_notifications')
+        .select('id, sender_id, message, created_at, read')
+        .eq('receiver_id', user.id)
+        .eq('read', false)
+        .order('created_at', { ascending: false });
+
+      if (cancelled) return;
+
+      if (error) {
+        if (error.code !== '42P01') {
+          console.error('Nudge fetch error:', error);
+        }
+        return;
+      }
+
+      const unread = Array.isArray(rows) ? rows : [];
+      setUnreadNotifications(unread.length);
+
+      if (unread.length === 0 || nudgeReceivedModal) {
+        return;
+      }
+
+      const latest = unread[0];
+      let fromName = 'A friend';
+
+      if (latest?.sender_id) {
+        const [userResult, profileResult] = await Promise.all([
+          supabase.from('users').select('id, username, email').eq('id', latest.sender_id).maybeSingle(),
+          supabase.from('profiles').select('id, full_name').eq('id', latest.sender_id).maybeSingle(),
+        ]);
+
+        const profileRow = profileResult.data || {};
+        const userRow = userResult.data || {};
+        fromName = profileRow.full_name || userRow.username || userRow.email || fromName;
+      }
+
+      setNudgeReceivedModal({
+        id: latest.id,
+        fromName,
+        message: latest.message || `${fromName} nudged you to get back to studying.`,
+      });
+    };
+
+    fetchNudges();
+    const intervalId = setInterval(fetchNudges, 8000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [user?.id, nudgeReceivedModal]);
 
   useEffect(() => {
     if (!Array.isArray(tasks) || tasks.length === 0) {
@@ -1241,7 +1346,15 @@ export default function Dashboard({ initialActive = "Task" }) {
               )}
             </div>
 
-            <button type="button" className="dashboard-add-task-btn" onClick={() => setActive("Friends")} style={{ marginTop: '16px' }}>
+            <button
+              type="button"
+              className="dashboard-add-task-btn"
+              onClick={() => {
+                setFriendsTargetId(null);
+                setActive("Friends");
+              }}
+              style={{ marginTop: '16px' }}
+            >
               Friends
             </button>
 
@@ -1251,17 +1364,29 @@ export default function Dashboard({ initialActive = "Task" }) {
             )}
             <div className="dashboard-friend-list">
               {friends.slice(0, 4).map((friend) => (
-                <div key={friend.id} className="dashboard-friend-item">
+                <div
+                  key={friend.id}
+                  className="dashboard-friend-item dashboard-friend-item--clickable"
+                  onClick={() => handleOpenFriendCard(friend)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleOpenFriendCard(friend);
+                    }
+                  }}
+                >
                   <div className="dashboard-friend-avatar">{toInitials(friend.name)}</div>
                   <div className="dashboard-friend-body">
                     <h3>{friend.name}</h3>
-                      <p>{friend.activity?.label || 'Idle'}</p>
+                    <p>{friend.activity?.label || 'Idle'}</p>
                   </div>
                   {friend.activity?.kind === 'idle' && (
                     <button
                       type="button"
                       className="dashboard-nudge-btn"
-                      onClick={() => handleMiniNudge(friend.name)}
+                      onClick={() => handleMiniNudge(friend.name, friend.userId || friend.id)}
                       title={`Nudge ${friend.name}`}
                     >
                       Nudge
@@ -1688,7 +1813,12 @@ export default function Dashboard({ initialActive = "Task" }) {
             <Inbox />
           )}
 
-          {active === "Friends" && <FriendSidebar />}
+          {active === "Friends" && (
+            <FriendSidebar
+              initialSelectedFriendId={friendsTargetId}
+              onSelectedFriendChange={handleSelectedFriendChange}
+            />
+          )}
 
           {active === "AddTask" && (
             <AddTaskPage
@@ -1709,10 +1839,64 @@ export default function Dashboard({ initialActive = "Task" }) {
             />
           </aside>
         )}
-        {active !== "Overview" && active !== "Task" && (
+        {active === "Friends" && selectedFriendPanelData?.friend && (
+          <aside className="dashboard-right-sidebar">
+            <ActivityPanel
+              mode="friend"
+              friendName={selectedFriendPanelData.friend?.name}
+              friendId={selectedFriendPanelData.friend?.userId || selectedFriendPanelData.friend?.id}
+              tasks={selectedFriendPanelData.tasks || []}
+              sessions={selectedFriendPanelData.sessions || []}
+              onNudge={handleMiniNudge}
+            />
+          </aside>
+        )}
+        {active !== "Overview" && active !== "Task" && active !== "Friends" && (
           <aside className="dashboard-right-sidebar">
             <ActivityPanel activity={activity} sessions={panelSessions} tasks={tasks} title="Time Spent Activity" />
           </aside>
+        )}
+
+        {nudgeSentModal && (
+          <div className="dashboard-nudge-modal-overlay" onClick={() => setNudgeSentModal(null)}>
+            <div className="dashboard-nudge-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="dashboard-nudge-modal-content">
+                <h2 className="dashboard-nudge-modal-title">Nudge Sent</h2>
+                <p className="dashboard-nudge-modal-message">
+                  You sent a nudge to <strong>{nudgeSentModal}</strong>.
+                </p>
+                <p className="dashboard-nudge-modal-subtitle">They will get a popup notification.</p>
+              </div>
+              <button
+                type="button"
+                className="dashboard-nudge-modal-close"
+                onClick={() => setNudgeSentModal(null)}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        )}
+
+        {nudgeReceivedModal && (
+          <div className="dashboard-nudge-modal-overlay" onClick={closeReceivedNudgeModal}>
+            <div className="dashboard-nudge-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="dashboard-nudge-modal-content">
+                <h2 className="dashboard-nudge-modal-title">You got nudged</h2>
+                <p className="dashboard-nudge-modal-message">
+                  <strong>{nudgeReceivedModal.fromName}</strong> sent you a nudge.
+                </p>
+                <p className="dashboard-nudge-modal-subtitle">Time to jump back into your tasks.</p>
+              </div>
+              <button
+                type="button"
+                className="dashboard-nudge-modal-close"
+                onClick={closeReceivedNudgeModal}
+              >
+                Let's go
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

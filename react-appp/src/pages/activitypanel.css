@@ -223,3 +223,20 @@
     font-size: 0.85rem;
     flex-wrap: wrap;
 }
+
+.activity-panel__nudge-btn {
+    width: 90%;
+    border: none;
+    border-radius: 12px;
+    background: #cd8b5c;
+    color: #fff;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.activity-panel__nudge-btn:hover {
+    background: #d69b6f;
+}

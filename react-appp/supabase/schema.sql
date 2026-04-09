@@ -114,3 +114,23 @@ for update using (auth.uid() = user_id);
 
 create policy if not exists "notification_settings_insert_own" on public.notification_settings
 for insert with check (auth.uid() = user_id);
+
+create table if not exists public.nudge_notifications (
+    id uuid primary key default gen_random_uuid(),
+    sender_id uuid not null references auth.users (id) on delete cascade,
+    receiver_id uuid not null references auth.users (id) on delete cascade,
+    message text,
+    read boolean not null default false,
+    created_at timestamptz not null default now()
+);
+
+alter table public.nudge_notifications enable row level security;
+
+create policy if not exists "nudge_notifications_receiver_select" on public.nudge_notifications
+for select using (auth.uid() = receiver_id);
+
+create policy if not exists "nudge_notifications_sender_insert" on public.nudge_notifications
+for insert with check (auth.uid() = sender_id);
+
+create policy if not exists "nudge_notifications_receiver_update" on public.nudge_notifications
+for update using (auth.uid() = receiver_id);

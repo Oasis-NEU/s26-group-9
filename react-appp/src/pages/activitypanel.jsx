@@ -68,8 +68,12 @@ export default function ActivityPanel({
     title = 'Time Spent Activity',
     mode = 'default',
     selectedTask = null,
+    friendName = '',
+    friendId = null,
+    onNudge = null,
 }) {
     const fallbackColors = ['#DCC9AE', '#BFA88D', '#8A7664', '#746455'];
+    const safeTasks = Array.isArray(tasks) ? tasks : [];
     const safeSessions = Array.isArray(sessions) ? sessions : [];
     const inputItems = Array.isArray(activity) ? activity : [];
 
@@ -85,6 +89,28 @@ export default function ActivityPanel({
         })
         .filter((item) => item.value > 0);
 
+    const minsByTaskId = {};
+    safeSessions.forEach((session) => {
+        const taskId = session?.task_id || session?.task;
+        if (!taskId) {
+            return;
+        }
+        const duration = Number.parseInt(session?.duration_mins ?? session?.duration_minutes ?? session?.minutes ?? 0, 10);
+        minsByTaskId[taskId] = (minsByTaskId[taskId] || 0) + (Number.isFinite(duration) ? Math.max(0, duration) : 0);
+    });
+
+    const friendPieData = safeTasks
+        .map((task, index) => {
+            const value = minsByTaskId[task?.id] || 0;
+            return {
+                name: task?.title || `Task ${index + 1}`,
+                value,
+                color: fallbackColors[index % fallbackColors.length],
+            };
+        })
+        .filter((item) => item.value > 0)
+        .sort((a, b) => b.value - a.value);
+
     const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const weekData = weekDays.map((day, index) => {
         const jsDay = (index + 1) % 7;
@@ -96,6 +122,81 @@ export default function ActivityPanel({
 
     const streak = computeStreak(safeSessions);
     const timeData = pieData.length > 0 ? pieData : [{ name: 'No data', value: 1, color: '#C8B8A8' }];
+
+    if (mode === 'friend') {
+        const profileName = String(friendName || 'Friend').trim() || 'Friend';
+        const chartData = friendPieData.length > 0
+            ? friendPieData
+            : [{ name: 'No data', value: 1, color: '#C8B8A8' }];
+
+        return (
+            <section className="activity-panel">
+                <div className="activity-panel__section">
+                    <h3 className="activity-panel__section-title">{profileName.toUpperCase()}&apos;S TIME BY TASK</h3>
+                    <article className="activity-panel__card activity-panel__card--light">
+                        <div className="activity-panel__chart-wrap activity-panel__chart-wrap--light">
+                            <ResponsiveContainer width="100%" height={180}>
+                                <PieChart>
+                                    <Pie data={chartData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={2} dataKey="value">
+                                        {chartData.map((entry, index) => (
+                                            <Cell key={`friend-cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </article>
+
+                    <div className="activity-panel__legend-list activity-panel__legend-list--below">
+                        {friendPieData.length === 0 ? (
+                            <div className="activity-panel__legend-row">
+                                <span>No task activity yet</span>
+                                <span>0m</span>
+                            </div>
+                        ) : (
+                            friendPieData.map((item) => (
+                                <div key={`${item.name}-${item.value}`} className="activity-panel__legend-row">
+                                    <div className="activity-panel__legend-left">
+                                        <span className="activity-panel__legend-swatch" style={{ background: item.color }} />
+                                        <span>{item.name}</span>
+                                    </div>
+                                    <span>{formatMinutes(item.value)}</span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                <div className="activity-panel__section">
+                    <h3 className="activity-panel__section-title">THIS WEEK</h3>
+                    <article className="activity-panel__card activity-panel__card--light">
+                        <div className="activity-panel__week-box">
+                            {weekData.map((item, i) => (
+                                <div key={`${item.day}-${i}`} className="activity-panel__week-col">
+                                    <div className={`activity-panel__week-bar ${item.active ? 'is-active' : ''}`} />
+                                    <span>{item.day}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </article>
+                </div>
+
+                <div className="activity-panel__section">
+                    <button
+                        type="button"
+                        className="activity-panel__nudge-btn"
+                        onClick={() => {
+                            if (typeof onNudge === 'function') {
+                                onNudge(profileName, friendId);
+                            }
+                        }}
+                    >
+                        Send nudge
+                    </button>
+                </div>
+            </section>
+        );
+    }
 
     if (mode === 'task') {
         const selectedTaskId = selectedTask?.id;

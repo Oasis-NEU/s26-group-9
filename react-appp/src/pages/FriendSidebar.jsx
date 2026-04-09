@@ -1,9 +1,6 @@
-import { useState, useEffect } from "react";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer } from "recharts";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import "./FriendSidebar.css";
-
-const CHART_COLORS = ["#5a4534", "#c07848", "#d4c5b0", "#8a7264", "#a89070"];
 
 function toInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -103,44 +100,6 @@ function getRecentActivity(tasks, sessions) {
   return events.slice(0, 3);
 }
 
-function getTimeByTask(tasks, sessions) {
-  const minsById = {};
-  sessions.forEach((s) => {
-    const id = s.task_id || s.task;
-    if (id) minsById[id] = (minsById[id] || 0) + s.duration_mins;
-  });
-  return tasks
-    .filter((t) => minsById[t.id] > 0)
-    .map((t, i) => ({ name: t.title, value: minsById[t.id], color: CHART_COLORS[i % CHART_COLORS.length] }))
-    .sort((a, b) => b.value - a.value);
-}
-
-function getWeeklyData(sessions) {
-  const labels = ["M", "T", "W", "T", "F", "S", "S"];
-  const now = new Date();
-  const daysFromMonday = (now.getDay() + 6) % 7;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - daysFromMonday);
-  monday.setHours(0, 0, 0, 0);
-  const minsPerDay = {};
-  sessions.forEach((s) => {
-    const key = new Date(s.started_at || s.created_at).toDateString();
-    minsPerDay[key] = (minsPerDay[key] || 0) + s.duration_mins;
-  });
-  return labels.map((day, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return { day, mins: minsPerDay[d.toDateString()] || 0 };
-  });
-}
-
-function formatMins(mins) {
-  if (mins < 60) return `${mins}m`;
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
 function timeAgo(dateStr) {
   if (!dateStr) return "";
   const diffMins = Math.floor((Date.now() - new Date(dateStr)) / 60000);
@@ -152,7 +111,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export default function FriendSidebar() {
+export default function FriendSidebar({ initialSelectedFriendId = null, onSelectedFriendChange = null }) {
   const [activeTab, setActiveTab] = useState("discover");
   const [myPublicId, setMyPublicId] = useState(null);
   const [myEmail, setMyEmail] = useState(null);
@@ -166,6 +125,7 @@ export default function FriendSidebar() {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [friendStats, setFriendStats] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const autoOpenedFriendIdRef = useRef("");
 
   useEffect(() => {
     async function init() {
@@ -337,6 +297,49 @@ export default function FriendSidebar() {
     setLoadingProfile(false);
   }
 
+  useEffect(() => {
+    const targetId = String(initialSelectedFriendId || '').trim();
+    if (!targetId) {
+      autoOpenedFriendIdRef.current = "";
+      return;
+    }
+
+    if (autoOpenedFriendIdRef.current === targetId) {
+      return;
+    }
+
+    const targetFriend = friends.find((friend) => {
+      const id = String(friend?.userId || friend?.id || '').trim();
+      return id === targetId;
+    });
+
+    if (!targetFriend) {
+      return;
+    }
+
+    autoOpenedFriendIdRef.current = targetId;
+    setActiveTab('friends');
+    openFriendProfile(targetFriend);
+  }, [friends, initialSelectedFriendId]);
+
+  useEffect(() => {
+    if (typeof onSelectedFriendChange !== 'function') {
+      return;
+    }
+
+    if (!selectedFriend) {
+      onSelectedFriendChange(null);
+      return;
+    }
+
+    onSelectedFriendChange({
+      friend: selectedFriend,
+      tasks: Array.isArray(friendStats?.tasks) ? friendStats.tasks : [],
+      sessions: Array.isArray(friendStats?.sessions) ? friendStats.sessions : [],
+      loading: loadingProfile,
+    });
+  }, [selectedFriend, friendStats, loadingProfile, onSelectedFriendChange]);
+
   async function handleSendRequest(target) {
     if (!myPublicId) return;
     const { data: existing } = await supabase
@@ -403,12 +406,12 @@ export default function FriendSidebar() {
 
   const filteredUsers = searchQuery.trim()
     ? discoverUsers.filter((u) => {
-        const q = searchQuery.toLowerCase();
-        return (
-          (u.username || "").toLowerCase().includes(q) ||
-          (u.email || "").toLowerCase().includes(q)
-        );
-      })
+      const q = searchQuery.toLowerCase();
+      return (
+        (u.username || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q)
+      );
+    })
     : discoverUsers;
 
   if (isLoading) return <div className="fs-loading">Loading...</div>;
@@ -426,11 +429,6 @@ export default function FriendSidebar() {
     const recentActivity = friendStats
       ? getRecentActivity(friendStats.tasks, friendStats.sessions)
       : [];
-    const timeByTask = friendStats
-      ? getTimeByTask(friendStats.tasks, friendStats.sessions)
-      : [];
-    const weeklyData = friendStats ? getWeeklyData(friendStats.sessions) : [];
-
     return (
       <div className="fs-page">
         <button className="fs-back-btn" onClick={() => { setSelectedFriend(null); setFriendStats(null); }}>
@@ -439,145 +437,81 @@ export default function FriendSidebar() {
 
         {actionMessage && <div className="fs-action-message">{actionMessage}</div>}
 
-        <div className="fs-profile-layout">
-          {/* Left column */}
-          <div className="fs-profile-main">
-            <div className="fs-profile-header">
-              <div className="fs-avatar fs-avatar--lg">{toInitials(selectedFriend.name)}</div>
-              <div>
-                <h2 className="fs-profile-name">{selectedFriend.name} — activity</h2>
-                <p className="fs-profile-sub">
-                  Friend
-                  {activeTaskInfo && ` · currently: ${activeTaskInfo.task.title}`}
-                  {activeTaskInfo?.todayMins > 0 && ` · ${activeTaskInfo.todayMins}m active`}
-                </p>
-              </div>
+        <div className="fs-profile-main">
+          <div className="fs-profile-header">
+            <div className="fs-avatar fs-avatar--lg">{toInitials(selectedFriend.name)}</div>
+            <div>
+              <h2 className="fs-profile-name">{selectedFriend.name} — activity</h2>
+              <p className="fs-profile-sub">
+                Friend
+                {activeTaskInfo && ` · currently: ${activeTaskInfo.task.title}`}
+                {activeTaskInfo?.todayMins > 0 && ` · ${activeTaskInfo.todayMins}m active`}
+              </p>
             </div>
-
-            {loadingProfile ? (
-              <p className="fs-empty-text">Loading activity...</p>
-            ) : friendStats ? (
-              <>
-                <div className="fs-stat-grid">
-                  <div className="fs-stat-card">
-                    <p className="fs-stat-value">{friendStats.tasks.length}</p>
-                    <p className="fs-stat-label">Tasks</p>
-                  </div>
-                  <div className="fs-stat-card">
-                    <p className="fs-stat-value">{doneCount}</p>
-                    <p className="fs-stat-label">Done</p>
-                  </div>
-                  <div className="fs-stat-card">
-                    <p className="fs-stat-value">
-                      {weekMins >= 60 ? (
-                        <>{Math.floor(weekMins / 60)}h{weekMins % 60 > 0 && <><br />{weekMins % 60}m</>}</>
-                      ) : `${weekMins}m`}
-                    </p>
-                    <p className="fs-stat-label">This week</p>
-                  </div>
-                  <div className="fs-stat-card">
-                    <p className="fs-stat-value">{streak}</p>
-                    <p className="fs-stat-label">Streak</p>
-                  </div>
-                </div>
-
-                {activeTaskInfo && (
-                  <>
-                    <h3 className="fs-section-heading">ACTIVE TASK</h3>
-                    <div className="fs-active-task">
-                      <span className="fs-active-dot" />
-                      <div>
-                        <p className="fs-active-name">{activeTaskInfo.task.title}</p>
-                        <p className="fs-active-sub">
-                          In progress
-                          {activeTaskInfo.todayMins > 0 && ` · ${activeTaskInfo.todayMins}m logged today`}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {recentActivity.length > 0 && (
-                  <>
-                    <h3 className="fs-section-heading">RECENT ACTIVITY</h3>
-                    <ul className="fs-activity-list">
-                      {recentActivity.map((ev, i) => (
-                        <li key={i} className="fs-activity-item">
-                          <span className="fs-activity-dot" />
-                          {ev.text}{ev.time ? ` ${timeAgo(ev.time)}` : ""}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-
-                {!activeTaskInfo && recentActivity.length === 0 && (
-                  <p className="fs-empty-text">No activity to show yet.</p>
-                )}
-              </>
-            ) : null}
           </div>
 
-          {/* Right sidebar */}
-          <div className="fs-profile-sidebar">
-            <h3 className="fs-section-heading">{selectedFriend.name.toUpperCase()}'S TIME BY TASK</h3>
-            <div className="fs-chart-card">
-              {timeByTask.length > 0 ? (
+          {loadingProfile ? (
+            <p className="fs-empty-text">Loading activity...</p>
+          ) : friendStats ? (
+            <>
+              <div className="fs-stat-grid">
+                <div className="fs-stat-card">
+                  <p className="fs-stat-value">{friendStats.tasks.length}</p>
+                  <p className="fs-stat-label">Tasks</p>
+                </div>
+                <div className="fs-stat-card">
+                  <p className="fs-stat-value">{doneCount}</p>
+                  <p className="fs-stat-label">Done</p>
+                </div>
+                <div className="fs-stat-card">
+                  <p className="fs-stat-value">
+                    {weekMins >= 60 ? (
+                      <>{Math.floor(weekMins / 60)}h{weekMins % 60 > 0 && <><br />{weekMins % 60}m</>}</>
+                    ) : `${weekMins}m`}
+                  </p>
+                  <p className="fs-stat-label">This week</p>
+                </div>
+                <div className="fs-stat-card">
+                  <p className="fs-stat-value">{streak}</p>
+                  <p className="fs-stat-label">Streak</p>
+                </div>
+              </div>
+
+              {activeTaskInfo && (
                 <>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <PieChart>
-                      <Pie
-                        data={timeByTask}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
-                        {timeByTask.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <ul className="fs-legend">
-                    {timeByTask.map((entry, i) => (
-                      <li key={i} className="fs-legend-item">
-                        <span className="fs-legend-dot" style={{ background: entry.color }} />
-                        <span className="fs-legend-name">{entry.name}</span>
-                        <span className="fs-legend-val">{formatMins(entry.value)}</span>
+                  <h3 className="fs-section-heading">ACTIVE TASK</h3>
+                  <div className="fs-active-task">
+                    <span className="fs-active-dot" />
+                    <div>
+                      <p className="fs-active-name">{activeTaskInfo.task.title}</p>
+                      <p className="fs-active-sub">
+                        In progress
+                        {activeTaskInfo.todayMins > 0 && ` · ${activeTaskInfo.todayMins}m logged today`}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {recentActivity.length > 0 && (
+                <>
+                  <h3 className="fs-section-heading">RECENT ACTIVITY</h3>
+                  <ul className="fs-activity-list">
+                    {recentActivity.map((ev, i) => (
+                      <li key={i} className="fs-activity-item">
+                        <span className="fs-activity-dot" />
+                        {ev.text}{ev.time ? ` ${timeAgo(ev.time)}` : ""}
                       </li>
                     ))}
                   </ul>
                 </>
-              ) : (
-                <p className="fs-empty-text">No session data yet.</p>
               )}
-            </div>
 
-            <h3 className="fs-section-heading" style={{ marginTop: 20 }}>THIS WEEK</h3>
-            <div className="fs-chart-card">
-              <ResponsiveContainer width="100%" height={120}>
-                <BarChart data={weeklyData} barCategoryGap="20%">
-                  <XAxis dataKey="day" axisLine={false} tickLine={false}
-                    tick={{ fontSize: 11, fill: "#9b806b" }} />
-                  <Bar dataKey="mins" radius={[4, 4, 0, 0]}>
-                    {weeklyData.map((entry, i) => (
-                      <Cell key={i} fill={entry.mins > 0 ? "#c07848" : "#ddd0c4"} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <button
-              className="fs-nudge-btn"
-              onClick={() => setActionMessage(`Nudge sent to ${selectedFriend.name}!`)}
-            >
-              Send nudge
-            </button>
-          </div>
+              {!activeTaskInfo && recentActivity.length === 0 && (
+                <p className="fs-empty-text">No activity to show yet.</p>
+              )}
+            </>
+          ) : null}
         </div>
       </div>
     );

@@ -170,7 +170,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     color: white;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 2px 0 rgba(153, 131, 111, 0.22);
     transition: background-color 200ms;
     border: none;
     cursor: pointer;
