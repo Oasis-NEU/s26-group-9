@@ -37,8 +37,8 @@ function formatSessionTimeRange(startedAt, durationMins) {
         day: 'numeric',
         year: 'numeric',
     });
-    const startText = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
-    const endText = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
+    const startText = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const endText = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     return `${dateText} · ${startText}-${endText}`;
 }
 
