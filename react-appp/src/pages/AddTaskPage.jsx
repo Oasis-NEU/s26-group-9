@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from '../lib/supabase';
 import "./AddTaskPage.css";
 
@@ -157,6 +157,13 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitMessageType, setSubmitMessageType] = useState("success");
+  const descriptionTextareaRef = useRef(null);
+  useEffect(() => {
+    const el = descriptionTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [description]);
 
   const toggleTag = (tag) => {
     setSelectedTags(prev =>
@@ -328,10 +335,12 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
       <div className="atp-field">
         <label className="atp-label">DESCRIPTION</label>
         <textarea
+          ref={descriptionTextareaRef}
           className="atp-textarea"
           placeholder="Add notes, context, or links..."
           value={description}
           onChange={e => setDescription(e.target.value)}
+          style={{ overflow: 'hidden', resize: 'none' }}
         />
       </div>
 
