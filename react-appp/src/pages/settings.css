@@ -278,3 +278,19 @@
 .settings-toggle input:checked+.settings-toggle-slider::before {
     transform: translateX(20px);
 }
+
+.settings-inline-edit {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.settings-inline-edit .settings-input {
+    margin-top: 0;
+    width: min(280px, 100%);
+}
+
+.settings-inline-edit .settings-save-btn {
+    white-space: nowrap;
+}
