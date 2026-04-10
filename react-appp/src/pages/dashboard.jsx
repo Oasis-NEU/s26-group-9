@@ -495,14 +495,13 @@ export default function Dashboard({ initialActive = "Task" }) {
       return;
     }
 
-    const localUnreadNudges = readStoredNudges(user.id).filter((item) => !item.read);
+    const localNudges = readStoredNudges(user.id);
 
-    const [remoteUnreadNudgesResult, pendingFriendRequestsResult, tasksResult, settingsResult] = await Promise.all([
+    const [remoteNudgesResult, pendingFriendRequestsResult, tasksResult, settingsResult] = await Promise.all([
       supabase
         .from('nudge_notifications')
-        .select('id')
-        .eq('receiver_id', user.id)
-        .eq('read', false),
+        .select('id, read')
+        .eq('receiver_id', user.id),
       supabase
         .from('friendships')
         .select('id')
@@ -519,15 +518,26 @@ export default function Dashboard({ initialActive = "Task" }) {
         .maybeSingle(),
     ]);
 
-    const remoteUnreadNudges = Array.isArray(remoteUnreadNudgesResult.data) ? remoteUnreadNudgesResult.data : [];
+    const remoteNudges = Array.isArray(remoteNudgesResult.data) ? remoteNudgesResult.data : [];
     const pendingFriendRequests = Array.isArray(pendingFriendRequestsResult.data) ? pendingFriendRequestsResult.data : [];
     const tasksRows = Array.isArray(tasksResult.data) ? tasksResult.data : [];
     const deadlineRemindersEnabled = settingsResult.data?.deadline_reminders !== false;
 
-    const unreadNudgeIds = new Set([
-      ...localUnreadNudges.map((row) => String(row.id || '')).filter(Boolean),
-      ...remoteUnreadNudges.map((row) => String(row.id || '')).filter(Boolean),
-    ]);
+    const nudgeMap = new Map();
+
+    remoteNudges.forEach((row) => {
+      const id = String(row?.id || '').trim();
+      if (!id) return;
+      nudgeMap.set(id, { id, read: Boolean(row.read) });
+    });
+
+    localNudges.forEach((row) => {
+      const id = String(row?.id || '').trim();
+      if (!id || nudgeMap.has(id)) return;
+      nudgeMap.set(id, { id, read: Boolean(row.read) });
+    });
+
+    const unreadNudgeCount = Array.from(nudgeMap.values()).filter((item) => !item.read).length;
 
     const taskReadMap = readTaskReminderReadMap(user.id);
     const now = Date.now();
@@ -549,7 +559,7 @@ export default function Dashboard({ initialActive = "Task" }) {
       }, 0)
       : 0;
 
-    setUnreadNotifications(unreadNudgeIds.size + pendingFriendRequests.length + unreadTaskReminderCount);
+    setUnreadNotifications(unreadNudgeCount + pendingFriendRequests.length + unreadTaskReminderCount);
   }, [user?.id]);
 
   const acceptedFriendships = useMemo(() => {
