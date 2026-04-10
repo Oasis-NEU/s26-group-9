@@ -398,6 +398,28 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
     await loadData(myPublicId, myEmail);
   }
 
+  async function handleRemoveFriend(friend) {
+    if (!friend?.friendshipId) return;
+
+    const { error } = await supabase
+      .from("friendships")
+      .delete()
+      .eq("id", friend.friendshipId);
+
+    if (error) {
+      console.error("Friend remove error:", error);
+      setActionMessage(error.message || "Could not remove friend.");
+      return;
+    }
+
+    setActionMessage(`Removed ${friend.name}.`);
+    if (selectedFriend?.friendshipId === friend.friendshipId) {
+      setSelectedFriend(null);
+      setFriendStats(null);
+    }
+    await loadData(myPublicId, myEmail);
+  }
+
   const filteredUsers = searchQuery.trim()
     ? discoverUsers.filter((u) => {
       const q = searchQuery.toLowerCase();
@@ -453,6 +475,16 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
                 {activeTaskInfo?.todayMins > 0 && ` · ${activeTaskInfo.todayMins}m active`}
               </p>
             </div>
+          </div>
+
+          <div className="fs-profile-actions">
+            <button
+              type="button"
+              className="fs-btn fs-btn--remove"
+              onClick={() => handleRemoveFriend(selectedFriend)}
+            >
+              Remove friend
+            </button>
           </div>
 
           {loadingProfile ? (
@@ -633,7 +665,19 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
                       <p className="fs-item-meta">{toJoinDate(friend.created_at)}</p>
                     )}
                   </div>
-                  <span className="fs-chevron">›</span>
+                  <div className="fs-item-actions">
+                    <button
+                      type="button"
+                      className="fs-btn fs-btn--remove"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFriend(friend);
+                      }}
+                    >
+                      Remove
+                    </button>
+                    <span className="fs-chevron">›</span>
+                  </div>
                 </li>
               ))}
             </ul>
