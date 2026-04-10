@@ -235,6 +235,7 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
         const publicId = myRow?.id || user.id;
         setMyPublicId(publicId);
         setMyEmail(user.email);
+        // eslint-disable-next-line react-hooks/immutability
         await loadData(publicId, user.email);
       }
       setIsLoading(false);

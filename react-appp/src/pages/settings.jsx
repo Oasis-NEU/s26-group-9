@@ -30,13 +30,13 @@ function writeStoredNotificationSettings(userId, patch) {
     window.localStorage.setItem(getNotificationSettingsStorageKey(userId), JSON.stringify(next));
 }
 
-export default function Settings({ onProfileUpdated }) {
+export default function Settings() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("Profile");
     const [editingName, setEditingName] = useState(false);
     const [editingEmail, setEditingEmail] = useState(false);
-    const [isSavingName, setIsSavingName] = useState(false);
-    const [isSavingEmail, setIsSavingEmail] = useState(false);
+    const [isSavingName] = useState(false);
+    const [isSavingEmail] = useState(false);
     const [isEditingPassword, setIsEditingPassword] = useState(false);
     const [isSavingPassword, setIsSavingPassword] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -91,9 +91,9 @@ export default function Settings({ onProfileUpdated }) {
                     deadline_reminders: typeof data.deadline_reminders === 'boolean' ? data.deadline_reminders : true,
                     nudge_notifications: typeof data.nudge_notifications === 'boolean' ? data.nudge_notifications : true,
                     friend_request_notifications:
-                    typeof data.friend_request_notifications === 'boolean'
-                        ? data.friend_request_notifications
-                        : true,
+                        typeof data.friend_request_notifications === 'boolean'
+                            ? data.friend_request_notifications
+                            : true,
                 };
 
                 setDeadlineReminders(normalized.deadline_reminders);

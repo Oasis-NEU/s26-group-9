@@ -198,17 +198,17 @@ export default function Inbox() {
                 .maybeSingle(),
         ]);
 
-            let resolvedTasksResult = tasksResult;
-            if (tasksResult.error?.code === '42703' && String(tasksResult.error.message || '').includes('due_time')) {
-                resolvedTasksResult = await supabase
+        let resolvedTasksResult = tasksResult;
+        if (tasksResult.error?.code === '42703' && String(tasksResult.error.message || '').includes('due_time')) {
+            resolvedTasksResult = await supabase
                 .from('tasks')
                 .select('id, title, status, due_date, created_at')
                 .eq('user_id', user.id);
-            }
+        }
 
         const [friendshipsData, friendshipsError] = [friendRequestsResult.data, friendRequestsResult.error];
         const [supabaseNudgesData, supabaseNudgesError] = [supabaseNudgesResult.data, supabaseNudgesResult.error];
-            const [tasksData, tasksError] = [resolvedTasksResult.data, resolvedTasksResult.error];
+        const [tasksData, tasksError] = [resolvedTasksResult.data, resolvedTasksResult.error];
         const [settingsData] = [settingsResult.data];
 
         if (friendshipsError) {
@@ -361,7 +361,11 @@ export default function Inbox() {
     const unreadCount = notifications.filter((n) => !n.read).length;
 
     useEffect(() => {
-        loadInboxNotifications();
+        const timer = setTimeout(() => {
+            loadInboxNotifications();
+        }, 0);
+
+        return () => clearTimeout(timer);
     }, [loadInboxNotifications]);
 
     useEffect(() => {

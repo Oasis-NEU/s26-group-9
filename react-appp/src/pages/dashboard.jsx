@@ -11,6 +11,8 @@ import { supabase } from '../lib/supabase';
 import Settings from './settings';
 import FriendSidebar from './FriendSidebar';
 
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/preserve-manual-memoization */
+
 const TASK_TAG_OPTIONS = ['School', 'Work', 'Personal', 'Reading', 'Coding'];
 const NUDGE_STORAGE_PREFIX = 'productivitea:nudges:';
 const TASK_REMINDER_READ_PREFIX = 'productivitea:task-reminders-read:';
@@ -60,6 +62,17 @@ function readTaskReminderReadMap(userId) {
   } catch {
     return {};
   }
+}
+
+function markTaskReminderRead(userId, reminderId) {
+  if (typeof window === 'undefined' || !userId || !reminderId) return;
+
+  const next = {
+    ...readTaskReminderReadMap(userId),
+    [reminderId]: true,
+  };
+
+  window.localStorage.setItem(getTaskReminderStorageKey(userId), JSON.stringify(next));
 }
 
 function normalizeStatusForReminders(value) {
@@ -326,11 +339,6 @@ function formatStatusLabel(status) {
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
 
-function formatPriorityLabel(priority) {
-  const p = priorityKey(priority);
-  return p === 'none' ? 'No priority' : `${p.charAt(0).toUpperCase() + p.slice(1)} priority`;
-}
-
 function toInitials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '??';
@@ -551,6 +559,7 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [optimisticSessions, setOptimisticSessions] = useState([]);
   const dismissedNudgeIdsRef = useRef(new Set());
   const dismissedDeadlineReminderIdsRef = useRef(new Set());
+  const localNudgeCounterRef = useRef(0);
 
   useEffect(() => {
     dismissedNudgeIdsRef.current = new Set();
@@ -788,7 +797,8 @@ export default function Dashboard({ initialActive = "Task" }) {
     const targetId = String(friendId || '').trim();
     if (!user?.id || !targetId) return;
 
-    const localNotificationId = `local-${Date.now()}`;
+    localNudgeCounterRef.current += 1;
+    const localNotificationId = `local-${user.id}-${targetId}-${localNudgeCounterRef.current}`;
     const supabaseNotificationId =
       typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
         ? crypto.randomUUID()
@@ -1072,7 +1082,7 @@ export default function Dashboard({ initialActive = "Task" }) {
       clearInterval(intervalId);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [user?.id, nudgeReceivedModal]);
+  }, [user?.id, nudgeReceivedModal, nudgeApiErrorShown]);
 
   useEffect(() => {
     if (!user?.id) return undefined;
