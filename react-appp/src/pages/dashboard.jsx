@@ -1736,16 +1736,14 @@ export default function Dashboard({ initialActive = "Task" }) {
                     <h3>{friend.name}</h3>
                     <p>{friend.activity?.label || 'Idle'}</p>
                   </div>
-                  {friend.activity?.kind === 'idle' && (
-                    <button
-                      type="button"
-                      className="dashboard-nudge-btn"
-                      onClick={() => handleMiniNudge(friend.name, friend.userId || friend.id)}
-                      title={`Nudge ${friend.name}`}
-                    >
-                      Nudge
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="dashboard-nudge-btn"
+                    onClick={() => handleMiniNudge(friend.name, friend.userId || friend.id)}
+                    title={`Nudge ${friend.name}`}
+                  >
+                    Nudge
+                  </button>
                 </div>
               ))}
             </div>

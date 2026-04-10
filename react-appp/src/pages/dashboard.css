@@ -227,8 +227,13 @@
 
 .dashboard-friend-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
+}
+
+.dashboard-friend-body {
+    flex: 1;
+    min-width: 0;
 }
 
 .dashboard-friend-item--clickable {
@@ -269,10 +274,14 @@
     margin: 4px 0 0;
     color: #d8c7b8;
     font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dashboard-nudge-btn {
     margin-left: auto;
+    flex-shrink: 0;
     border: none;
     background: #d2915d;
     color: #ffffff;

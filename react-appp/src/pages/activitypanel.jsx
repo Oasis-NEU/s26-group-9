@@ -194,6 +194,7 @@ export default function ActivityPanel({
                         Send nudge
                     </button>
                 </div>
+
             </section>
         );
     }
