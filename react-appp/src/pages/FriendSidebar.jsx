@@ -665,14 +665,24 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
         </button>
         <button
           className={`fs-tab${activeTab === "friends" ? " fs-tab--active" : ""}`}
-          onClick={() => setActiveTab("friends")}
+          onClick={async () => {
+            setActiveTab("friends");
+            if (myPublicId && myEmail) {
+              await loadData(myPublicId, myEmail);
+            }
+          }}
         >
           My Friends
           {friends.length > 0 && <span className="fs-badge">{friends.length}</span>}
         </button>
         <button
           className={`fs-tab${activeTab === "pending" ? " fs-tab--active" : ""}`}
-          onClick={() => setActiveTab("pending")}
+          onClick={async () => {
+            setActiveTab("pending");
+            if (myPublicId && myEmail) {
+              await loadData(myPublicId, myEmail);
+            }
+          }}
         >
           Pending Requests
           {pendingRequests.length > 0 && (
