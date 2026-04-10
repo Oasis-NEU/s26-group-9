@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Edit2 } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons';
+import { supabase } from '../lib/supabase';
 import './overview.css';
 
 function normalizeStatus(status) {
@@ -236,10 +237,73 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
         setIsEditingStatus(true);
     };
 
-    const handleSaveStatus = () => {
-        setCurrentStatus(tempStatus);
-        setCurrentTask(tempTask);
+    useEffect(() => {
+        async function loadSavedStatus() {
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError || !authData?.user?.id) return;
+
+            const { data: userRow, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', authData.user.id)
+                .maybeSingle();
+
+            if (error || !userRow) return;
+
+            const storedStatus = userRow.status || userRow.presence_status || userRow.current_status || null;
+            const storedTask = userRow.current_task || userRow.status_task || '';
+
+            if (storedStatus && statusOptions.some((option) => option.value === storedStatus)) {
+                setCurrentStatus(storedStatus);
+                setTempStatus(storedStatus);
+            }
+
+            if (storedTask) {
+                setCurrentTask(storedTask);
+                setTempTask(storedTask);
+            }
+        }
+
+        loadSavedStatus();
+    }, []);
+
+    const handleSaveStatus = async () => {
+        const nextStatus = tempStatus;
+        const nextTask = nextStatus === 'working' ? tempTask : '';
+
+        setCurrentStatus(nextStatus);
+        setCurrentTask(nextTask);
         setIsEditingStatus(false);
+
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        const userId = authData?.user?.id;
+        if (authError || !userId) return;
+
+        const userEmail = authData?.user?.email || null;
+
+        const updateAttempts = [
+            { status: nextStatus, current_task: nextTask || null },
+            { presence_status: nextStatus, status_task: nextTask || null },
+            { current_status: nextStatus, current_task: nextTask || null },
+        ];
+
+        for (const payload of updateAttempts) {
+            const upsertPayload = {
+                id: userId,
+                email: userEmail,
+                ...payload,
+            };
+
+            const { error } = await supabase
+                .from('users')
+                .upsert(upsertPayload, { onConflict: 'id' });
+
+            if (!error) return;
+            if (error.code !== '42703') {
+                console.error('Could not save status:', error);
+                return;
+            }
+        }
     };
 
     const handleCancelEdit = () => {

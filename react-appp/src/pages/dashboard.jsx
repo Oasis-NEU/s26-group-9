@@ -54,6 +54,17 @@ function removeStoredNudge(userId, notificationId) {
   window.localStorage.setItem(getNudgeStorageKey(userId), JSON.stringify(next));
 }
 
+function emailLocalPart(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return raw.split('@')[0] || raw;
+}
+
+function isNetworkFetchError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  return message.includes('failed to fetch') || message.includes('networkerror') || message.includes('fetch');
+}
+
 function formatMinutes(value) {
   const mins = Number.parseInt(value, 10);
   if (!Number.isFinite(mins) || mins <= 0) return "0m";
@@ -330,6 +341,48 @@ function getFriendActivitySummary(tasks = [], sessions = []) {
   };
 }
 
+function normalizePresenceStatus(value) {
+  const raw = String(value || '').toLowerCase().replace(/[\s_-]+/g, '');
+  if (!raw) return '';
+  if (raw === 'onbreak') return 'break';
+  return raw;
+}
+
+function getFriendPresenceActivity(profile, fallbackActivity) {
+  const statusValue = normalizePresenceStatus(
+    profile?.status ?? profile?.presence_status ?? profile?.current_status
+  );
+  const currentTask = String(profile?.current_task ?? profile?.status_task ?? '').trim();
+
+  if (!statusValue && currentTask) {
+    return {
+      label: `${currentTask} · working`,
+      kind: 'active',
+    };
+  }
+
+  if (statusValue === 'working') {
+    return {
+      label: currentTask ? `${currentTask} · working` : 'Working',
+      kind: 'active',
+    };
+  }
+
+  if (statusValue === 'break') {
+    return { label: 'On break', kind: 'idle' };
+  }
+
+  if (statusValue === 'offline') {
+    return { label: 'Offline', kind: 'idle' };
+  }
+
+  if (statusValue === 'idle') {
+    return { label: 'Idle', kind: 'idle' };
+  }
+
+  return fallbackActivity;
+}
+
 function parseTaskTags(task) {
   const fromTags = task?.tags;
   const parsed = [];
@@ -391,6 +444,7 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [nudgeSentModal, setNudgeSentModal] = useState(null);
   const [isCancellingNudge, setIsCancellingNudge] = useState(false);
   const [nudgeReceivedModal, setNudgeReceivedModal] = useState(null);
+  const [nudgeApiErrorShown, setNudgeApiErrorShown] = useState(false);
   const navigate = useNavigate();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -401,6 +455,7 @@ export default function Dashboard({ initialActive = "Task" }) {
   const acceptedFriendships = useMemo(() => {
     return (Array.isArray(friendships) ? friendships : []).filter((friendship) => friendship.status === 'accepted');
   }, [friendships]);
+
   useEffect(() => {
     async function loadFriendProfiles() {
       if (!user?.id || acceptedFriendships.length === 0) {
@@ -422,7 +477,7 @@ export default function Dashboard({ initialActive = "Task" }) {
 
       const usersResult = await supabase
         .from('users')
-        .select('id, email, username, avatar_url, created_at')
+        .select('*')
         .in('id', friendIds);
 
       const profileMap = {};
@@ -436,6 +491,9 @@ export default function Dashboard({ initialActive = "Task" }) {
     }
 
     loadFriendProfiles();
+
+    const intervalId = setInterval(loadFriendProfiles, 5000);
+    return () => clearInterval(intervalId);
   }, [acceptedFriendships, user?.id]);
 
   useEffect(() => {
@@ -495,65 +553,79 @@ export default function Dashboard({ initialActive = "Task" }) {
     async function loadUser() {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData?.user) return;
-      setUserName(authData.user.user_metadata?.full_name || authData.user.email || '');
+      setUserName(authData.user.user_metadata?.full_name || emailLocalPart(authData.user.email) || '');
     }
     loadUser();
   }, []);
 
   const handleMiniNudge = async (friendName, friendId = null) => {
-    setFriendActionMessage(`Nudge sent to ${friendName}!`);
-
     const targetId = String(friendId || '').trim();
     if (!user?.id || !targetId) return;
 
     const localNotificationId = `local-${Date.now()}`;
-    const localNotification = {
-      id: localNotificationId,
-      senderId: user.id,
-      receiverId: targetId,
-      fromName: userName || 'A friend',
-      message: `${userName || 'A friend'} nudged you to get back to studying.`,
-      timestamp: new Date().toISOString(),
-      read: false,
-      type: 'nudge',
-      source: 'local',
-    };
-
-    writeStoredNudge(localNotification);
-
-    const sentModalPayload = {
-      friendName,
-      targetId,
-      localNotificationId,
-      supabaseNotificationId: null,
-    };
-    setNudgeSentModal(sentModalPayload);
-
-    const { data, error } = await supabase
-      .from('nudge_notifications')
-      .insert({
+    const supabaseNotificationId =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : null;
+    try {
+      const insertPayload = {
         sender_id: user.id,
         receiver_id: targetId,
         message: `${userName || 'A friend'} nudged you to get back to studying.`,
-      })
-      .select('id')
-      .single();
+      };
 
-    if (error && error.code !== '42P01') {
-      console.error('Nudge send error:', error);
-      return;
-    }
+      if (supabaseNotificationId) {
+        insertPayload.id = supabaseNotificationId;
+      }
 
-    if (data?.id) {
-      setNudgeSentModal((current) => {
-        if (!current || current.localNotificationId !== localNotificationId) {
-          return current;
+      const { error } = await supabase
+        .from('nudge_notifications')
+        .insert(insertPayload);
+
+      if (error) {
+        if (error.code === '42P01') {
+          setFriendActionMessage('Nudges are not set up yet. Run the nudge table SQL in Supabase.');
+          return;
         }
-        return {
-          ...current,
-          supabaseNotificationId: data.id,
-        };
+
+        if (error.code === '42501') {
+          setFriendActionMessage('Nudge permission blocked by RLS policy. Please update nudge policies.');
+          return;
+        }
+
+        console.error('Nudge send error:', error);
+        setFriendActionMessage(error.message || 'Could not send nudge right now.');
+        return;
+      }
+
+      const localNotification = {
+        id: localNotificationId,
+        senderId: user.id,
+        receiverId: targetId,
+        fromName: userName || 'A friend',
+        message: `${userName || 'A friend'} nudged you to get back to studying.`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: 'nudge',
+        source: 'local',
+      };
+
+      writeStoredNudge(localNotification);
+      setNudgeSentModal({
+        friendName,
+        targetId,
+        localNotificationId,
+        supabaseNotificationId,
       });
+      setFriendActionMessage(`Nudge sent to ${friendName}!`);
+      setNudgeApiErrorShown(false);
+    } catch (error) {
+      console.error('Nudge send error:', error);
+      if (isNetworkFetchError(error)) {
+        setFriendActionMessage('Could not reach notification API. Check your internet and Supabase connection.');
+      } else {
+        setFriendActionMessage('Could not send nudge right now.');
+      }
     }
   };
 
@@ -617,8 +689,9 @@ export default function Dashboard({ initialActive = "Task" }) {
   const friends = acceptedFriendships.map((friendship) => {
     const otherId = friendship.user_id === user?.id ? friendship.friend_id : friendship.user_id;
     const profile = friendProfiles[otherId] || {};
-    const name = profile.full_name || profile.username || profile.email || 'Friend';
-    const friendStatus = friendActivity[String(otherId)] || { label: 'Loading...', kind: 'loading' };
+    const name = profile.full_name || profile.username || emailLocalPart(profile.email) || 'Friend';
+    const fallbackStatus = friendActivity[String(otherId)] || { label: 'Loading...', kind: 'loading' };
+    const friendStatus = getFriendPresenceActivity(profile, fallbackStatus);
 
     return {
       friendshipId: friendship.id,
@@ -678,23 +751,41 @@ export default function Dashboard({ initialActive = "Task" }) {
         return;
       }
 
-      const { data: rows, error } = await supabase
-        .from('nudge_notifications')
-        .select('id, sender_id, message, created_at, read')
-        .eq('receiver_id', user.id)
-        .eq('read', false)
-        .order('created_at', { ascending: false });
+      let rows = [];
+      let error = null;
+
+      try {
+        const result = await supabase
+          .from('nudge_notifications')
+          .select('id, sender_id, message, created_at, read')
+          .eq('receiver_id', user.id)
+          .eq('read', false)
+          .order('created_at', { ascending: false });
+
+        rows = Array.isArray(result.data) ? result.data : [];
+        error = result.error || null;
+      } catch (fetchError) {
+        error = fetchError;
+      }
 
       if (cancelled) return;
 
       if (error) {
-        if (error.code !== '42P01') {
+        if (error.code !== '42P01' && !isNetworkFetchError(error)) {
           console.error('Nudge fetch error:', error);
+        }
+
+        if (!nudgeApiErrorShown) {
+          setFriendActionMessage('Could not fetch nudge API right now. Notifications may be delayed.');
+          setNudgeApiErrorShown(true);
         }
         return;
       }
 
       const unread = Array.isArray(rows) ? rows : [];
+      if (nudgeApiErrorShown) {
+        setNudgeApiErrorShown(false);
+      }
       setUnreadNotifications(unread.length);
 
       if (unread.length === 0 || nudgeReceivedModal) {
@@ -712,7 +803,7 @@ export default function Dashboard({ initialActive = "Task" }) {
           .maybeSingle();
 
         const userRow = userResult.data || {};
-        fromName = userRow.username || userRow.email || fromName;
+        fromName = userRow.username || emailLocalPart(userRow.email) || fromName;
       }
 
       setNudgeReceivedModal({
