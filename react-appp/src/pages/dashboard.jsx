@@ -66,13 +66,82 @@ function normalizeStatusForReminders(value) {
   return String(value || '').toLowerCase().replace(/[\s_-]+/g, '');
 }
 
-function getDueAtIso(dueDate, dueTime) {
+function parseDueDateParts(dueDate) {
   const rawDate = String(dueDate || '').trim();
   if (!rawDate) return null;
 
-  const rawTime = String(dueTime || '09:00:00').trim();
-  const cleanTime = rawTime.length === 5 ? `${rawTime}:00` : rawTime;
-  const parsed = new Date(`${rawDate}T${cleanTime}`);
+  const isoMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return {
+      year: Number(isoMatch[1]),
+      month: Number(isoMatch[2]),
+      day: Number(isoMatch[3]),
+    };
+  }
+
+  const usMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (usMatch) {
+    return {
+      year: Number(usMatch[3]),
+      month: Number(usMatch[1]),
+      day: Number(usMatch[2]),
+    };
+  }
+
+  const parsed = new Date(rawDate);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return {
+    year: parsed.getFullYear(),
+    month: parsed.getMonth() + 1,
+    day: parsed.getDate(),
+  };
+}
+
+function parseDueTimeParts(dueTime) {
+  const rawTime = String(dueTime || '').trim();
+  if (!rawTime) {
+    // If no explicit time is set, treat the deadline as end-of-day.
+    return { hours: 23, minutes: 59, seconds: 0 };
+  }
+
+  const ampmMatch = rawTime.match(/^(\d{1,2})(?::(\d{2}))(?::(\d{2}))?\s*([aApP][mM])$/);
+  if (ampmMatch) {
+    const hour12 = Number(ampmMatch[1]);
+    const minute = Number(ampmMatch[2] || 0);
+    const second = Number(ampmMatch[3] || 0);
+    if (hour12 < 1 || hour12 > 12 || minute > 59 || second > 59) return null;
+
+    let hour24 = hour12 % 12;
+    if (ampmMatch[4].toUpperCase() === 'PM') hour24 += 12;
+    return { hours: hour24, minutes: minute, seconds: second };
+  }
+
+  const twentyFourHourMatch = rawTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (twentyFourHourMatch) {
+    const hours = Number(twentyFourHourMatch[1]);
+    const minutes = Number(twentyFourHourMatch[2]);
+    const seconds = Number(twentyFourHourMatch[3] || 0);
+    if (hours > 23 || minutes > 59 || seconds > 59) return null;
+    return { hours, minutes, seconds };
+  }
+
+  return null;
+}
+
+function getDueAtIso(dueDate, dueTime) {
+  const dateParts = parseDueDateParts(dueDate);
+  const timeParts = parseDueTimeParts(dueTime);
+  if (!dateParts || !timeParts) return null;
+
+  const parsed = new Date(
+    dateParts.year,
+    dateParts.month - 1,
+    dateParts.day,
+    timeParts.hours,
+    timeParts.minutes,
+    timeParts.seconds,
+    0
+  );
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toISOString();
 }

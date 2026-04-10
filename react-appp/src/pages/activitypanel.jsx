@@ -91,7 +91,7 @@ export default function ActivityPanel({
 
     const minsByTaskId = {};
     safeSessions.forEach((session) => {
-        const taskId = session?.task_id || session?.task;
+        const taskId = session?.task_id || session?.taskId || session?.task;
         if (!taskId) {
             return;
         }
@@ -204,7 +204,7 @@ export default function ActivityPanel({
         const selectedTitle = selectedTask?.title || 'Selected task';
 
         const thisTaskMinutes = safeSessions
-            .filter((s) => String(s?.task_id || '') === String(selectedTaskId || ''))
+            .filter((s) => String(s?.task_id || s?.taskId || '') === String(selectedTaskId || ''))
             .reduce((sum, s) => sum + Number.parseInt(s?.duration_mins ?? s?.duration_minutes ?? s?.minutes ?? 0, 10), 0);
 
         const totalMinutes = safeSessions
@@ -223,7 +223,7 @@ export default function ActivityPanel({
         ];
 
         const taskSessions = safeSessions
-            .filter((s) => String(s?.task_id || '') === String(selectedTaskId || ''))
+            .filter((s) => String(s?.task_id || s?.taskId || '') === String(selectedTaskId || ''))
             .filter((s) => s?.started_at)
             .sort((a, b) => new Date(b.started_at) - new Date(a.started_at))
             .slice(0, 6);

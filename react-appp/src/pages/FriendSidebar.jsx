@@ -26,15 +26,80 @@ function toJoinDate(createdAt) {
   return `Joined ${d.toLocaleString("default", { month: "short" })} ${d.getFullYear()}`;
 }
 
+function toDurationMinutes(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.round(value));
+  }
+
+  const raw = String(value ?? '').trim();
+  if (!raw) return 0;
+
+  // Handles formats like "HH:MM:SS" or "MM:SS".
+  if (raw.includes(':')) {
+    const parts = raw.split(':').map((part) => Number(part));
+    if (parts.every((part) => Number.isFinite(part) && part >= 0)) {
+      if (parts.length === 3) {
+        const [hours, minutes, seconds] = parts;
+        return Math.max(0, Math.round((hours * 3600 + minutes * 60 + seconds) / 60));
+      }
+      if (parts.length === 2) {
+        const [minutes, seconds] = parts;
+        return Math.max(0, Math.round((minutes * 60 + seconds) / 60));
+      }
+    }
+  }
+
+  // Handles ISO 8601 durations like "PT2M" and "PT1H5M".
+  const isoMatch = raw.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i);
+  if (isoMatch) {
+    const hours = Number(isoMatch[1] || 0);
+    const minutes = Number(isoMatch[2] || 0);
+    const seconds = Number(isoMatch[3] || 0);
+    return Math.max(0, Math.round((hours * 3600 + minutes * 60 + seconds) / 60));
+  }
+
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) ? Math.max(0, Math.round(numeric)) : 0;
+}
+
 function normSession(s) {
   return {
     ...s,
-    duration_mins: Math.max(
-      0,
-      parseInt(s.duration_mins ?? s.duration_minutes ?? s.duration ?? s.minutes ?? 0, 10) || 0
+    task_id: s.task_id ?? s.taskId ?? s.task ?? null,
+    duration_mins: toDurationMinutes(
+      s.duration_mins ?? s.duration_minutes ?? s.duration ?? s.minutes ?? s.length ?? s.elapsed
     ),
     started_at: s.started_at ?? s.start_time ?? s.created_at,
   };
+}
+
+async function fetchSessionsForFriend(friendId) {
+  const tryQuery = async (tableName) => {
+    let result = await supabase
+      .from(tableName)
+      .select('*')
+      .eq('user_id', friendId)
+      .order('created_at', { ascending: false });
+
+    // Some schemas do not include created_at on study session tables.
+    if (result.error?.code === '42703' && String(result.error.message || '').includes('created_at')) {
+      result = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('user_id', friendId);
+    }
+
+    return result;
+  };
+
+  const studyResult = await tryQuery('study_sessions');
+  const studyRows = Array.isArray(studyResult.data) ? studyResult.data : [];
+  if (!studyResult.error && studyRows.length > 0) {
+    return studyRows;
+  }
+
+  const sessionsResult = await tryQuery('sessions');
+  return Array.isArray(sessionsResult.data) ? sessionsResult.data : [];
 }
 
 function calcWeekMins(sessions) {
@@ -277,20 +342,11 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
     setLoadingProfile(true);
     const friendId = friend.id || friend.userId;
 
-    const [tasksRes, sessionsRes] = await Promise.all([
-      supabase.from("tasks").select("*").eq("user_id", friendId).order("created_at", { ascending: false }),
-      supabase.from("study_sessions").select("*").eq("user_id", friendId).order("created_at", { ascending: false }),
+    const tasksPromise = supabase.from("tasks").select("*").eq("user_id", friendId).order("created_at", { ascending: false });
+    const [tasksRes, sessionData] = await Promise.all([
+      tasksPromise,
+      fetchSessionsForFriend(friendId),
     ]);
-
-    let sessionData = sessionsRes.data || [];
-    if (sessionsRes.error || sessionData.length === 0) {
-      const fb = await supabase
-        .from("sessions")
-        .select("*")
-        .eq("user_id", friendId)
-        .order("created_at", { ascending: false });
-      if (!fb.error && fb.data?.length > 0) sessionData = fb.data;
-    }
 
     setFriendStats({
       tasks: tasksRes.data || [],
