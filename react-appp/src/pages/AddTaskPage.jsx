@@ -144,19 +144,29 @@ async function insertSubtaskWithFallback({ taskId, userId, text }) {
 }
 
 export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [dueTime, setDueTime] = useState("");
-  const [priority, setPriority] = useState("High");
-  const [status, setStatus] = useState("Not started");
-  const [selectedTags, setSelectedTags] = useState(["School"]);
-  const [customTags, setCustomTags] = useState([]);
+  const savedDraft = (() => {
+    try {
+      const saved = localStorage.getItem('productivitea:addtask-draft');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const [title, setTitle] = useState(savedDraft?.title || "");
+  const [description, setDescription] = useState(savedDraft?.description || "");
+  const [dueDate, setDueDate] = useState(savedDraft?.dueDate || "");
+  const [dueTime, setDueTime] = useState(savedDraft?.dueTime || "");
+  const [priority, setPriority] = useState(savedDraft?.priority || "High");
+  const [status, setStatus] = useState(savedDraft?.status || "Not started");
+  const [selectedTags, setSelectedTags] = useState(savedDraft?.selectedTags || ["School"]);
+  const [customTags, setCustomTags] = useState(savedDraft?.customTags || []);
   const [newTagDraft, setNewTagDraft] = useState("");
-  const [subtasks, setSubtasks] = useState([""]);
+  const [subtasks, setSubtasks] = useState(savedDraft?.subtasks || [""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitMessageType, setSubmitMessageType] = useState("success");
+
   const descriptionTextareaRef = useRef(null);
   useEffect(() => {
     const el = descriptionTextareaRef.current;
@@ -164,6 +174,17 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight}px`;
   }, [description]);
+
+  // Save draft (skip first render to avoid overwriting loaded draft)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const draft = { title, description, dueDate, dueTime, priority, status, selectedTags, customTags, subtasks };
+    localStorage.setItem('productivitea:addtask-draft', JSON.stringify(draft));
+  }, [title, description, dueDate, dueTime, priority, status, selectedTags, customTags, subtasks]);
 
   const toggleTag = (tag) => {
     setSelectedTags(prev =>
@@ -304,6 +325,7 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
     setCustomTags([]);
     setNewTagDraft('');
     setSubtasks(['']);
+    localStorage.removeItem('productivitea:addtask-draft');
 
     if (typeof onTaskCreated === 'function') {
       await onTaskCreated(taskId);

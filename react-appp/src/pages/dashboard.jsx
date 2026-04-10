@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Bell, Play, Square, Clock, CheckCircle2, Trash2 } from 'lucide-react';
 import ActivityPanel from "./activitypanel";
 import { Overview } from "./overview";
@@ -514,7 +514,13 @@ function parseTaskTags(task) {
 }
 
 export default function Dashboard({ initialActive = "Task" }) {
-  const [active, setActive] = useState(initialActive);
+  // With:
+  const [searchParams, setSearchParams] = useSearchParams();
+  const active = searchParams.get('tab') || initialActive;
+
+  const setActive = (tab) => {
+    setSearchParams({ tab });
+  };
   const { user, tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const middlePanelRef = useRef(null);
