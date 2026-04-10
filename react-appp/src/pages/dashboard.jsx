@@ -541,6 +541,7 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [nudgeSentModal, setNudgeSentModal] = useState(null);
   const [isCancellingNudge, setIsCancellingNudge] = useState(false);
   const [nudgeReceivedModal, setNudgeReceivedModal] = useState(null);
+  const [deadlineReminderModal, setDeadlineReminderModal] = useState(null);
   const [nudgeApiErrorShown, setNudgeApiErrorShown] = useState(false);
   const navigate = useNavigate();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -549,9 +550,12 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [optimisticSessions, setOptimisticSessions] = useState([]);
   const dismissedNudgeIdsRef = useRef(new Set());
+  const dismissedDeadlineReminderIdsRef = useRef(new Set());
 
   useEffect(() => {
     dismissedNudgeIdsRef.current = new Set();
+    dismissedDeadlineReminderIdsRef.current = new Set();
+    setDeadlineReminderModal(null);
   }, [user?.id]);
 
   const refreshUnreadInboxCount = useCallback(async () => {
@@ -574,7 +578,7 @@ export default function Dashboard({ initialActive = "Task" }) {
         .eq('status', 'pending'),
       supabase
         .from('tasks')
-        .select('id, status, due_date, due_time')
+        .select('id, title, status, due_date, due_time')
         .eq('user_id', user.id),
       supabase
         .from('notification_settings')
@@ -583,9 +587,17 @@ export default function Dashboard({ initialActive = "Task" }) {
         .maybeSingle(),
     ]);
 
+    let resolvedTasksResult = tasksResult;
+    if (tasksResult.error?.code === '42703' && String(tasksResult.error.message || '').includes('due_time')) {
+      resolvedTasksResult = await supabase
+        .from('tasks')
+        .select('id, title, status, due_date')
+        .eq('user_id', user.id);
+    }
+
     const remoteNudges = Array.isArray(remoteNudgesResult.data) ? remoteNudgesResult.data : [];
     const pendingFriendRequests = Array.isArray(pendingFriendRequestsResult.data) ? pendingFriendRequestsResult.data : [];
-    const tasksRows = Array.isArray(tasksResult.data) ? tasksResult.data : [];
+    const tasksRows = Array.isArray(resolvedTasksResult.data) ? resolvedTasksResult.data : [];
     const deadlineRemindersEnabled = settingsResult.data?.deadline_reminders !== false;
 
     const nudgeMap = new Map();
@@ -608,23 +620,62 @@ export default function Dashboard({ initialActive = "Task" }) {
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
 
+    const pendingTaskReminders = deadlineRemindersEnabled
+      ? tasksRows
+        .map((task) => {
+          const status = normalizeStatusForReminders(task?.status);
+          if (status === 'completed' || status === 'done') return null;
+
+          const dueAtIso = getDueAtIso(task?.due_date, task?.due_time);
+          if (!dueAtIso) return null;
+
+          const diffMs = new Date(dueAtIso).getTime() - now;
+          if (diffMs <= 0 || diffMs > dayMs) return null;
+
+          const reminderId = `task-24h-${task.id}-${dueAtIso}`;
+          if (taskReadMap[reminderId]) return null;
+
+          return {
+            id: reminderId,
+            taskId: task.id,
+            title: task.title || 'Untitled assignment',
+            dueAtIso,
+            dueAtText: new Date(dueAtIso).toLocaleString(),
+            diffMs,
+            hoursLeft: Math.max(1, Math.ceil(diffMs / (60 * 60 * 1000))),
+          };
+        })
+        .filter(Boolean)
+      : [];
+
     const unreadTaskReminderCount = deadlineRemindersEnabled
-      ? tasksRows.reduce((count, task) => {
-        const status = normalizeStatusForReminders(task?.status);
-        if (status === 'completed' || status === 'done') return count;
-
-        const dueAtIso = getDueAtIso(task?.due_date, task?.due_time);
-        if (!dueAtIso) return count;
-
-        const diffMs = new Date(dueAtIso).getTime() - now;
-        if (diffMs <= 0 || diffMs > dayMs) return count;
-
-        const reminderId = `task-24h-${task.id}-${dueAtIso}`;
-        return taskReadMap[reminderId] ? count : count + 1;
-      }, 0)
+      ? pendingTaskReminders.length
       : 0;
 
     setUnreadNotifications(unreadNudgeCount + pendingFriendRequests.length + unreadTaskReminderCount);
+
+    if (!deadlineRemindersEnabled || pendingTaskReminders.length === 0) {
+      setDeadlineReminderModal(null);
+      return;
+    }
+
+    const nextReminder = pendingTaskReminders
+      .sort((a, b) => a.diffMs - b.diffMs)
+      .find((reminder) => !dismissedDeadlineReminderIdsRef.current.has(String(reminder.id)));
+
+    if (!nextReminder) {
+      return;
+    }
+
+    setDeadlineReminderModal((prev) => {
+      if (prev && prev.id === nextReminder.id) {
+        return prev;
+      }
+      if (prev) {
+        return prev;
+      }
+      return nextReminder;
+    });
   }, [user?.id]);
 
   const acceptedFriendships = useMemo(() => {
@@ -852,6 +903,26 @@ export default function Dashboard({ initialActive = "Task" }) {
     }
 
     setNudgeReceivedModal(null);
+    refreshUnreadInboxCount();
+  };
+
+  const closeDeadlineReminderModal = ({ markRead = false, openInbox = false } = {}) => {
+    if (!deadlineReminderModal?.id) {
+      return;
+    }
+
+    dismissedDeadlineReminderIdsRef.current.add(String(deadlineReminderModal.id));
+
+    if (markRead && user?.id) {
+      markTaskReminderRead(user.id, deadlineReminderModal.id);
+    }
+
+    setDeadlineReminderModal(null);
+
+    if (openInbox) {
+      setActive('Inbox');
+    }
+
     refreshUnreadInboxCount();
   };
 
@@ -1769,7 +1840,7 @@ export default function Dashboard({ initialActive = "Task" }) {
               }}
               style={{ marginTop: '16px' }}
             >
-              Find Friends
+              + Find Friends
             </button>
 
             <h2 className="dashboard-friends-title">My Friends</h2>
@@ -2317,6 +2388,36 @@ export default function Dashboard({ initialActive = "Task" }) {
               >
                 Let's go
               </button>
+            </div>
+          </div>
+        )}
+
+        {deadlineReminderModal && !nudgeReceivedModal && !nudgeSentModal && (
+          <div className="dashboard-nudge-modal-overlay" onClick={() => closeDeadlineReminderModal()}>
+            <div className="dashboard-nudge-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="dashboard-nudge-modal-content">
+                <h2 className="dashboard-nudge-modal-title">Deadline soon</h2>
+                <p className="dashboard-nudge-modal-message">
+                  <strong>{deadlineReminderModal.title}</strong> is due in about {deadlineReminderModal.hoursLeft}h.
+                </p>
+                <p className="dashboard-nudge-modal-subtitle">Due {deadlineReminderModal.dueAtText}</p>
+              </div>
+              <div className="dashboard-nudge-modal-actions">
+                <button
+                  type="button"
+                  className="dashboard-nudge-modal-cancel"
+                  onClick={() => closeDeadlineReminderModal({ markRead: true })}
+                >
+                  Mark as read
+                </button>
+                <button
+                  type="button"
+                  className="dashboard-nudge-modal-close"
+                  onClick={() => closeDeadlineReminderModal({ openInbox: true })}
+                >
+                  Open inbox
+                </button>
+              </div>
             </div>
           </div>
         )}

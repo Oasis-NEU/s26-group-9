@@ -198,9 +198,17 @@ export default function Inbox() {
                 .maybeSingle(),
         ]);
 
+            let resolvedTasksResult = tasksResult;
+            if (tasksResult.error?.code === '42703' && String(tasksResult.error.message || '').includes('due_time')) {
+                resolvedTasksResult = await supabase
+                .from('tasks')
+                .select('id, title, status, due_date, created_at')
+                .eq('user_id', user.id);
+            }
+
         const [friendshipsData, friendshipsError] = [friendRequestsResult.data, friendRequestsResult.error];
         const [supabaseNudgesData, supabaseNudgesError] = [supabaseNudgesResult.data, supabaseNudgesResult.error];
-        const [tasksData, tasksError] = [tasksResult.data, tasksResult.error];
+            const [tasksData, tasksError] = [resolvedTasksResult.data, resolvedTasksResult.error];
         const [settingsData] = [settingsResult.data];
 
         if (friendshipsError) {
@@ -388,6 +396,14 @@ export default function Inbox() {
             supabase.removeChannel(channel);
         };
     }, [currentUserId, loadInboxNotifications]);
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            loadInboxNotifications();
+        }, 60 * 1000);
+
+        return () => clearInterval(intervalId);
+    }, [loadInboxNotifications]);
 
     useEffect(() => {
         if (!actionMessage) return;

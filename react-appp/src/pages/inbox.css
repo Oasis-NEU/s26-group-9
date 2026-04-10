@@ -100,21 +100,31 @@
 }
 
 .inbox-notification {
-    border: 1px solid #eae0d5;
-    border-radius: 0.5rem;
+    position: relative;
+    border: 1.5px solid #d8cbbf;
+    border-radius: 1rem;
     padding: 1rem;
+    overflow: hidden;
     transition: all 0.2s;
     cursor: pointer;
 }
 
 .inbox-notification.unread {
     background-color: #fbf9f7;
-    border-left: 4px solid #cd8b5c;
+}
+
+.inbox-notification.unread::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #cd8b5c;
 }
 
 .inbox-notification.read {
     background-color: white;
-    border-left: 4px solid transparent;
 }
 
 .inbox-notification-content {
