@@ -518,6 +518,7 @@ export default function Dashboard({ initialActive = "Task" }) {
   const { user, tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const middlePanelRef = useRef(null);
+  const descriptionTextareaRef = useRef(null);
   const [newSubtaskName, setNewSubtaskName] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [subtaskMessage, setSubtaskMessage] = useState("");
@@ -1212,6 +1213,13 @@ export default function Dashboard({ initialActive = "Task" }) {
 
     return () => clearTimeout(timeoutId);
   }, [subtaskMessage]);
+
+  useEffect(() => {
+    const el = descriptionTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [descriptionDraft]);
 
   // Timer effect for study sessions
   useEffect(() => {
@@ -2131,11 +2139,12 @@ export default function Dashboard({ initialActive = "Task" }) {
                   <h3 className="dashboard-task-section-title">Description</h3>
                   <div className="dashboard-task-description-card">
                     <textarea
+                      ref={descriptionTextareaRef}
                       className="dashboard-task-description-input"
                       value={descriptionDraft}
                       onChange={(e) => setDescriptionDraft(e.target.value)}
                       placeholder="Add a description..."
-                      rows={3}
+                      style={{ overflow: 'hidden', resize: 'none' }}
                     />
                     <button
                       type="button"
@@ -2170,7 +2179,7 @@ export default function Dashboard({ initialActive = "Task" }) {
                     {selectedTaskSubtasks.length === 0 ? (
                       <div className="dashboard-task-detail-row">No subtasks yet.</div>
                     ) : (
-                      selectedTaskSubtasks.slice(0, 5).map((subtask) => (
+                      selectedTaskSubtasks.map((subtask) => (
                         <div key={subtask.id} className="dashboard-task-detail-row dashboard-task-detail-row--interactive">
                           <label className="dashboard-subtask-main">
                             <input
