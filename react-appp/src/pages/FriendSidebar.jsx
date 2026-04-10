@@ -683,7 +683,6 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
 
       {actionMessage && <div className="fs-action-message">{actionMessage}</div>}
 
-      <h2 className="dashboard-nav-header" style={{ marginTop: 0 }}>My Friends</h2>
       <div className="fs-tabs">
         <button
           className={`fs-tab${activeTab === "discover" ? " fs-tab--active" : ""}`}
