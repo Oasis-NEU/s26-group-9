@@ -401,6 +401,19 @@
   display: flex;
   justify-content: flex-start;
   margin-bottom: 18px;
+  align-items: center;
+  gap: 10px;
+}
+
+.fs-friend-count-chip {
+  background: #f5efe6;
+  border: 1px solid #dcc9ae;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  color: #7a5c3a;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* Stat grid */
