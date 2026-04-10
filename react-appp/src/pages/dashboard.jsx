@@ -513,7 +513,7 @@ function parseTaskTags(task) {
   ));
 }
 
-export default function Dashboard({ initialActive = "Task" }) {
+export default function Dashboard({ initialActive = "Overview" }) {
   // With:
   const [searchParams, setSearchParams] = useSearchParams();
   const active = searchParams.get('tab') || initialActive;
