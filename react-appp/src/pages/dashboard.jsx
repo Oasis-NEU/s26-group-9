@@ -341,6 +341,48 @@ function getFriendActivitySummary(tasks = [], sessions = []) {
   };
 }
 
+function normalizePresenceStatus(value) {
+  const raw = String(value || '').toLowerCase().replace(/[\s_-]+/g, '');
+  if (!raw) return '';
+  if (raw === 'onbreak') return 'break';
+  return raw;
+}
+
+function getFriendPresenceActivity(profile, fallbackActivity) {
+  const statusValue = normalizePresenceStatus(
+    profile?.status ?? profile?.presence_status ?? profile?.current_status
+  );
+  const currentTask = String(profile?.current_task ?? profile?.status_task ?? '').trim();
+
+  if (!statusValue && currentTask) {
+    return {
+      label: `${currentTask} · working`,
+      kind: 'active',
+    };
+  }
+
+  if (statusValue === 'working') {
+    return {
+      label: currentTask ? `${currentTask} · working` : 'Working',
+      kind: 'active',
+    };
+  }
+
+  if (statusValue === 'break') {
+    return { label: 'On break', kind: 'idle' };
+  }
+
+  if (statusValue === 'offline') {
+    return { label: 'Offline', kind: 'idle' };
+  }
+
+  if (statusValue === 'idle') {
+    return { label: 'Idle', kind: 'idle' };
+  }
+
+  return fallbackActivity;
+}
+
 function parseTaskTags(task) {
   const fromTags = task?.tags;
   const parsed = [];
@@ -413,6 +455,7 @@ export default function Dashboard({ initialActive = "Task" }) {
   const acceptedFriendships = useMemo(() => {
     return (Array.isArray(friendships) ? friendships : []).filter((friendship) => friendship.status === 'accepted');
   }, [friendships]);
+
   useEffect(() => {
     async function loadFriendProfiles() {
       if (!user?.id || acceptedFriendships.length === 0) {
@@ -434,7 +477,7 @@ export default function Dashboard({ initialActive = "Task" }) {
 
       const usersResult = await supabase
         .from('users')
-        .select('id, email, username, avatar_url, created_at')
+        .select('*')
         .in('id', friendIds);
 
       const profileMap = {};
@@ -448,6 +491,9 @@ export default function Dashboard({ initialActive = "Task" }) {
     }
 
     loadFriendProfiles();
+
+    const intervalId = setInterval(loadFriendProfiles, 5000);
+    return () => clearInterval(intervalId);
   }, [acceptedFriendships, user?.id]);
 
   useEffect(() => {
@@ -644,7 +690,8 @@ export default function Dashboard({ initialActive = "Task" }) {
     const otherId = friendship.user_id === user?.id ? friendship.friend_id : friendship.user_id;
     const profile = friendProfiles[otherId] || {};
     const name = profile.full_name || profile.username || emailLocalPart(profile.email) || 'Friend';
-    const friendStatus = friendActivity[String(otherId)] || { label: 'Loading...', kind: 'loading' };
+    const fallbackStatus = friendActivity[String(otherId)] || { label: 'Loading...', kind: 'loading' };
+    const friendStatus = getFriendPresenceActivity(profile, fallbackStatus);
 
     return {
       friendshipId: friendship.id,

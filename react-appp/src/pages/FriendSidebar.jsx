@@ -101,6 +101,21 @@ function getRecentActivity(tasks, sessions) {
   return events.slice(0, 3);
 }
 
+function normalizePresenceStatus(value) {
+  const raw = String(value || "").toLowerCase().replace(/[\s_-]+/g, "");
+  if (!raw) return "";
+  if (raw === "onbreak") return "break";
+  return raw;
+}
+
+function getPersistedPresence(friend) {
+  const status = normalizePresenceStatus(
+    friend?.status ?? friend?.presence_status ?? friend?.current_status
+  );
+  const task = String(friend?.current_task ?? friend?.status_task ?? "").trim();
+  return { status, task };
+}
+
 function timeAgo(dateStr) {
   if (!dateStr) return "";
   const diffMins = Math.floor((Date.now() - new Date(dateStr)) / 60000);
@@ -405,6 +420,17 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
     const activeTaskInfo = friendStats
       ? getActiveTask(friendStats.tasks, friendStats.sessions)
       : null;
+    const persistedPresence = getPersistedPresence(selectedFriend);
+    const subtitleStatus =
+      persistedPresence.status === "working"
+        ? (persistedPresence.task ? `currently: ${persistedPresence.task}` : "currently: working")
+        : persistedPresence.status === "break"
+          ? "currently: on break"
+          : persistedPresence.status === "idle"
+            ? "currently: idle"
+            : persistedPresence.status === "offline"
+              ? "currently: offline"
+              : (activeTaskInfo ? `currently: ${activeTaskInfo.task.title}` : "");
     const recentActivity = friendStats
       ? getRecentActivity(friendStats.tasks, friendStats.sessions)
       : [];
@@ -423,7 +449,7 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
               <h2 className="fs-profile-name">{selectedFriend.name} — activity</h2>
               <p className="fs-profile-sub">
                 Friend
-                {activeTaskInfo && ` · currently: ${activeTaskInfo.task.title}`}
+                {subtitleStatus && ` · ${subtitleStatus}`}
                 {activeTaskInfo?.todayMins > 0 && ` · ${activeTaskInfo.todayMins}m active`}
               </p>
             </div>
