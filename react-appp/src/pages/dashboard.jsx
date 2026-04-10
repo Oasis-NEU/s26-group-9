@@ -1884,6 +1884,11 @@ export default function Dashboard({ initialActive = "Task" }) {
               )}
             </div>
 
+            <h2 className="dashboard-nav-header">My Friends</h2>
+            {friendActionMessage && (
+              <div className="dashboard-friend-toast">{friendActionMessage}</div>
+            )}
+
             <button
               type="button"
               className="dashboard-add-task-btn"
@@ -1892,15 +1897,11 @@ export default function Dashboard({ initialActive = "Task" }) {
                 localStorage.removeItem('productivitea:selected-friend');
                 setActive("Friends");
               }}
-              style={{ marginTop: '16px' }}
+              style={{ marginTop: '0px' }}
             >
               + Find Friends
             </button>
 
-            <h2 className="dashboard-nav-header">My Friends</h2>
-            {friendActionMessage && (
-              <div className="dashboard-friend-toast">{friendActionMessage}</div>
-            )}
             <div className="dashboard-friend-list">
               {friends.map((friend) => (
                 <div
