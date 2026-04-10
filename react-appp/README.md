@@ -2,6 +2,8 @@
 
 A modern, full-stack web application for task management, productivity tracking, and social collaboration. Built with React, Vite, and Supabase.
 
+**🚀 Live Site**: [https://productivi-tea.netlify.app/](https://productivi-tea.netlify.app/)
+
 ## Features
 
 ### Core Functionality
