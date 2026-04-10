@@ -13,6 +13,7 @@ import FriendSidebar from './FriendSidebar';
 
 const TASK_TAG_OPTIONS = ['School', 'Work', 'Personal', 'Reading', 'Coding'];
 const NUDGE_STORAGE_PREFIX = 'productivitea:nudges:';
+const TASK_REMINDER_READ_PREFIX = 'productivitea:task-reminders-read:';
 
 function getNudgeStorageKey(userId) {
   return `${NUDGE_STORAGE_PREFIX}${userId}`;
@@ -52,6 +53,37 @@ function removeStoredNudge(userId, notificationId) {
 
   const next = readStoredNudges(userId).filter((item) => item.id !== notificationId);
   window.localStorage.setItem(getNudgeStorageKey(userId), JSON.stringify(next));
+}
+
+function getTaskReminderStorageKey(userId) {
+  return `${TASK_REMINDER_READ_PREFIX}${userId}`;
+}
+
+function readTaskReminderReadMap(userId) {
+  if (typeof window === 'undefined' || !userId) return {};
+
+  try {
+    const rawValue = window.localStorage.getItem(getTaskReminderStorageKey(userId));
+    const parsed = rawValue ? JSON.parse(rawValue) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function normalizeStatusForReminders(value) {
+  return String(value || '').toLowerCase().replace(/[\s_-]+/g, '');
+}
+
+function getDueAtIso(dueDate, dueTime) {
+  const rawDate = String(dueDate || '').trim();
+  if (!rawDate) return null;
+
+  const rawTime = String(dueTime || '09:00:00').trim();
+  const cleanTime = rawTime.length === 5 ? `${rawTime}:00` : rawTime;
+  const parsed = new Date(`${rawDate}T${cleanTime}`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
 }
 
 function emailLocalPart(value) {
@@ -457,6 +489,69 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [optimisticSessions, setOptimisticSessions] = useState([]);
 
+  const refreshUnreadInboxCount = useCallback(async () => {
+    if (!user?.id) {
+      setUnreadNotifications(0);
+      return;
+    }
+
+    const localUnreadNudges = readStoredNudges(user.id).filter((item) => !item.read);
+
+    const [remoteUnreadNudgesResult, pendingFriendRequestsResult, tasksResult, settingsResult] = await Promise.all([
+      supabase
+        .from('nudge_notifications')
+        .select('id')
+        .eq('receiver_id', user.id)
+        .eq('read', false),
+      supabase
+        .from('friendships')
+        .select('id')
+        .eq('friend_id', user.id)
+        .eq('status', 'pending'),
+      supabase
+        .from('tasks')
+        .select('id, status, due_date, due_time')
+        .eq('user_id', user.id),
+      supabase
+        .from('notification_settings')
+        .select('deadline_reminders')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+
+    const remoteUnreadNudges = Array.isArray(remoteUnreadNudgesResult.data) ? remoteUnreadNudgesResult.data : [];
+    const pendingFriendRequests = Array.isArray(pendingFriendRequestsResult.data) ? pendingFriendRequestsResult.data : [];
+    const tasksRows = Array.isArray(tasksResult.data) ? tasksResult.data : [];
+    const deadlineRemindersEnabled = settingsResult.data?.deadline_reminders !== false;
+
+    const unreadNudgeIds = new Set([
+      ...localUnreadNudges.map((row) => String(row.id || '')).filter(Boolean),
+      ...remoteUnreadNudges.map((row) => String(row.id || '')).filter(Boolean),
+    ]);
+
+    const taskReadMap = readTaskReminderReadMap(user.id);
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    const unreadTaskReminderCount = deadlineRemindersEnabled
+      ? tasksRows.reduce((count, task) => {
+        const status = normalizeStatusForReminders(task?.status);
+        if (status === 'completed' || status === 'done') return count;
+
+        const dueAtIso = getDueAtIso(task?.due_date, task?.due_time);
+        if (!dueAtIso) return count;
+
+        const diffMs = new Date(dueAtIso).getTime() - now;
+        if (diffMs <= 0 || diffMs > dayMs) return count;
+
+        const reminderId = `task-24h-${task.id}-${dueAtIso}`;
+        return taskReadMap[reminderId] ? count : count + 1;
+      }, 0)
+      : 0;
+
+    setUnreadNotifications(unreadNudgeIds.size + pendingFriendRequests.length + unreadTaskReminderCount);
+  }, [user?.id]);
+
   const acceptedFriendships = useMemo(() => {
     return (Array.isArray(friendships) ? friendships : []).filter((friendship) => friendship.status === 'accepted');
   }, [friendships]);
@@ -746,8 +841,6 @@ export default function Dashboard({ initialActive = "Task" }) {
       if (cancelled) return;
 
       if (localUnread.length > 0) {
-        setUnreadNotifications(localUnread.length);
-
         if (!nudgeReceivedModal) {
           const latest = localUnread[0];
           setNudgeReceivedModal({
@@ -796,13 +889,12 @@ export default function Dashboard({ initialActive = "Task" }) {
       if (nudgeApiErrorShown) {
         setNudgeApiErrorShown(false);
       }
-      setUnreadNotifications(unread.length);
 
       if (unread.length === 0 || nudgeReceivedModal) {
         return;
       }
 
-      const latest = unread[0];
+          refreshUnreadInboxCount();
       let fromName = 'A friend';
 
       if (latest?.sender_id) {
@@ -840,6 +932,26 @@ export default function Dashboard({ initialActive = "Task" }) {
       window.removeEventListener('storage', handleStorage);
     };
   }, [user?.id, nudgeReceivedModal]);
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+
+    refreshUnreadInboxCount();
+
+    const intervalId = setInterval(refreshUnreadInboxCount, 5000);
+    const handleStorage = (event) => {
+      if (event.key === getNudgeStorageKey(user.id) || event.key === getTaskReminderStorageKey(user.id)) {
+        refreshUnreadInboxCount();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [user?.id, refreshUnreadInboxCount]);
 
   useEffect(() => {
     if (!Array.isArray(tasks) || tasks.length === 0) {
