@@ -1878,7 +1878,7 @@ export default function Dashboard({ initialActive = "Task" }) {
               + Find Friends
             </button>
 
-            <h2 className="dashboard-friends-title">My Friends</h2>
+            <h2 className="dashboard-nav-header">My Friends</h2>
             {friendActionMessage && (
               <div className="dashboard-friend-toast">{friendActionMessage}</div>
             )}
