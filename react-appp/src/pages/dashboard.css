@@ -61,6 +61,75 @@
     border-right: 1px solid #8a7664;
 }
 
+.dashboard-sidebar {
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    min-height: 0;
+}
+
+.dashboard-sidebar.collapsed {
+    width: 0;
+    border-right: none;
+}
+
+
+/* Floating pull tab toggle for sidebar */
+
+.dashboard-pull-tab {
+    position: absolute;
+    left: 240px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #99836F;
+    border: 1px solid #8a7664;
+    border-left: none;
+    border-radius: 0 7px 7px 0;
+    width: 14px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.18s, left 0.25s cubic-bezier(0.4,0,0.2,1), background 0.15s;
+    padding: 0;
+}
+
+.dashboard-sidebar:hover ~ .dashboard-pull-tab {
+    opacity: 1;
+}
+
+.dashboard-pull-tab:hover {
+    opacity: 1;
+    background: #7d6a58;
+}
+
+.dashboard-pull-tab.collapsed {
+    left: 0;
+    opacity: 1;
+}
+
+.dashboard-pull-tab.collapsed svg {
+    transform: scaleX(-1);
+}
+
+.dashboard-pull-tab svg {
+    width: 8px;
+    height: 8px;
+    transition: transform 0.25s;
+    display: block;
+    flex-shrink: 0;
+}
+
+.dashboard-pull-tab.collapsed {
+    left: 0;
+}
+
+.dashboard-pull-tab.collapsed svg {
+    transform: scaleX(-1);
+}
+
 .dashboard-brand {
     padding: 24px 20px;
     font-size: 1.125rem;
@@ -1168,20 +1237,24 @@
     font-weight: 500;
 }
 
+@media (max-width: 1100px) {
+    .dashboard-right-sidebar {
+        display: none !important;
+    }
+}
+
 @media (max-width: 768px) {
-    .dashboard-page {
-        flex-direction: column;
-        height: auto;
-        overflow: visible;
+    .dashboard-sidebar {
+        width: 0 !important;
+        border-right: none;
     }
 
-    .dashboard-sidebar {
-        width: 100%;
+    .dashboard-pull-tab {
+        display: none;
     }
 
     .dashboard-content {
         padding: 24px;
-        overflow: visible;
     }
 
     .dashboard-task-stats-grid {

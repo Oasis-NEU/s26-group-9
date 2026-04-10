@@ -566,6 +566,7 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [optimisticSessions, setOptimisticSessions] = useState([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const dismissedNudgeIdsRef = useRef(new Set());
   const dismissedDeadlineReminderIdsRef = useRef(new Set());
   const localNudgeCounterRef = useRef(0);
@@ -575,6 +576,17 @@ export default function Dashboard({ initialActive = "Task" }) {
     dismissedDeadlineReminderIdsRef.current = new Set();
     setDeadlineReminderModal(null);
   }, [user?.id]);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        setSidebarCollapsed(prev => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
 
   const refreshUnreadInboxCount = useCallback(async () => {
     if (!user?.id) {
@@ -1823,7 +1835,7 @@ export default function Dashboard({ initialActive = "Task" }) {
       </header>
       <div className="dashboard-page">
 
-        <aside className="dashboard-sidebar">
+        <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <section className="dashboard-task-rail">
             <h2 className="dashboard-nav-header">My Tasks</h2>
             <button type="button" className="dashboard-add-task-btn" onClick={handleAddTask}>
@@ -1920,6 +1932,17 @@ export default function Dashboard({ initialActive = "Task" }) {
             </div>
           </section>
         </aside>
+
+        <button
+          type="button"
+          className={`dashboard-pull-tab ${sidebarCollapsed ? 'collapsed' : ''}`}
+          onClick={() => setSidebarCollapsed(prev => !prev)}
+          title="toggle sidebar"
+        >
+          <svg viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="8" height="8">
+            <polyline points="5,1 2,4 5,7" />
+          </svg>
+        </button>
 
         <main ref={middlePanelRef} className={`dashboard-content ${active === "Overview" ? "dashboard-content--full" : ""}`}>
           {active === "Overview" && (
