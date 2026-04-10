@@ -1133,6 +1133,11 @@ export default function Dashboard({ initialActive = "Task" }) {
     }
   }, [selectedTaskId]);
 
+  useEffect(() => {
+    if (active !== 'AddTask') {
+      localStorage.removeItem('productivitea:addtask-draft');
+    }
+  }, [active]);
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) || null;
   const selectedTaskSubtasks = subtasks.filter((subtask) => {
     const relatedTaskId = subtask.task_id ?? subtask.taskId;
