@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import './App.css'
 import Launch from './pages/launch.jsx';
 import Login from './pages/log-in.jsx';
 import Signup from './pages/signup.jsx';
-import Dashboard from './pages/dashboard.jsx';
 import PrivacyPolicy from './pages/privacypolicy.jsx';
+
+const Dashboard = lazy(() => import('./pages/dashboard.jsx'));
 
 function ProtectedRoute({ children }) {
   const [isAuthorized, setIsAuthorized] = useState(null);
@@ -48,7 +49,9 @@ function App() {
             path="/tasks/new"
             element={(
               <ProtectedRoute>
-                <Dashboard initialActive="AddTask" />
+                <Suspense fallback={null}>
+                  <Dashboard initialActive="AddTask" />
+                </Suspense>
               </ProtectedRoute>
             )}
           />
@@ -56,7 +59,9 @@ function App() {
             path="/dashboard"
             element={(
               <ProtectedRoute>
-                <Dashboard />
+                <Suspense fallback={null}>
+                  <Dashboard />
+                </Suspense>
               </ProtectedRoute>
             )}
           />

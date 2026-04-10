@@ -138,6 +138,7 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
   const [isLoading, setIsLoading] = useState(true);
   const [actionMessage, setActionMessage] = useState("");
   const [sentRequests, setSentRequests] = useState(new Set());
+  const [incomingRequestUserIds, setIncomingRequestUserIds] = useState(new Set());
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [friendStats, setFriendStats] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -192,16 +193,23 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
 
     const friendships = friendshipsData || [];
 
-    const relatedUserIds = new Set(
-      friendships
-        .map((f) => (f.user_id === userId ? f.friend_id : f.user_id))
-        .filter(Boolean)
-    );
-
     const accepted = friendships.filter((f) => f.status === "accepted");
     const incoming = friendships.filter(
       (f) => f.status === "pending" && f.friend_id === userId
     );
+    const outgoing = friendships.filter(
+      (f) => f.status === "pending" && f.user_id === userId
+    );
+
+    setSentRequests(new Set(outgoing.map((f) => f.friend_id).filter(Boolean)));
+    setIncomingRequestUserIds(new Set(incoming.map((f) => f.user_id).filter(Boolean)));
+
+    const acceptedFriendIds = new Set(
+      accepted
+        .map((f) => (f.user_id === userId ? f.friend_id : f.user_id))
+        .filter(Boolean)
+    );
+
     let allUsers = [];
     const { data: userRows } = await supabase
       .from("users")
@@ -209,8 +217,8 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
       .limit(100);
 
     const rows = userRows || [];
-    // Only filter out the current user by email — everything else is handled by button state
-    allUsers = rows.filter((u) => u.email !== userEmail && !relatedUserIds.has(u.id));
+    // Discover should include everyone except yourself and already-accepted friends.
+    allUsers = rows.filter((u) => u.email !== userEmail && !acceptedFriendIds.has(u.id));
     setDiscoverUsers(allUsers);
 
     // Load accepted friends profiles
@@ -626,6 +634,8 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
                   </div>
                   {sentRequests.has(user.id) ? (
                     <button className="fs-btn fs-btn--sent" disabled>Requested</button>
+                  ) : incomingRequestUserIds.has(user.id) ? (
+                    <button className="fs-btn fs-btn--sent" disabled>Pending</button>
                   ) : (
                     <button className="fs-btn fs-btn--add" onClick={() => handleSendRequest(user)}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"

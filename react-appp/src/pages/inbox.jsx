@@ -352,7 +352,7 @@ export default function Inbox() {
                         .update({ read: true })
                         .eq('receiver_id', userId)
                         .in('id', userNudgeIds)
-                        .then(() => {});
+                        .then(() => { });
                 }
             });
         } else if (currentUserId && taskReminderIds.length > 0) {

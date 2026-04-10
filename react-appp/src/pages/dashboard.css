@@ -1316,6 +1316,7 @@
 .dashboard-home-link:hover {
     opacity: 0.85;
 }
+
 .dashboard-nudge-modal-overlay {
     position: fixed;
     inset: 0;

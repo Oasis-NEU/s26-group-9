@@ -39,15 +39,6 @@ function writeStoredNudge(notification) {
   window.localStorage.setItem(getNudgeStorageKey(notification.receiverId), JSON.stringify(next));
 }
 
-function markStoredNudgeRead(userId, notificationId) {
-  if (typeof window === 'undefined' || !userId || !notificationId) return;
-
-  const next = readStoredNudges(userId).map((item) => (
-    item.id === notificationId ? { ...item, read: true } : item
-  ));
-  window.localStorage.setItem(getNudgeStorageKey(userId), JSON.stringify(next));
-}
-
 function removeStoredNudge(userId, notificationId) {
   if (typeof window === 'undefined' || !userId || !notificationId) return;
 
@@ -488,6 +479,11 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [optimisticSessions, setOptimisticSessions] = useState([]);
+  const dismissedNudgeIdsRef = useRef(new Set());
+
+  useEffect(() => {
+    dismissedNudgeIdsRef.current = new Set();
+  }, [user?.id]);
 
   const refreshUnreadInboxCount = useCallback(async () => {
     if (!user?.id) {
@@ -782,23 +778,12 @@ export default function Dashboard({ initialActive = "Task" }) {
   }, []);
 
   const closeReceivedNudgeModal = async () => {
-    if (nudgeReceivedModal?.source === 'local') {
-      markStoredNudgeRead(user?.id, nudgeReceivedModal.id);
-    }
-
     if (nudgeReceivedModal?.id) {
-      const { error } = await supabase
-        .from('nudge_notifications')
-        .update({ read: true })
-        .eq('id', nudgeReceivedModal.id);
-
-      if (error && error.code !== '42P01') {
-        console.error('Nudge read error:', error);
-      }
+      dismissedNudgeIdsRef.current.add(String(nudgeReceivedModal.id));
     }
 
     setNudgeReceivedModal(null);
-    setUnreadNotifications((prev) => Math.max(0, prev - 1));
+    refreshUnreadInboxCount();
   };
 
   const friends = acceptedFriendships.map((friendship) => {
@@ -847,16 +832,18 @@ export default function Dashboard({ initialActive = "Task" }) {
 
     const fetchNudges = async () => {
       const localUnread = readStoredNudges(user.id).filter((item) => !item.read);
+      const dismissed = dismissedNudgeIdsRef.current;
 
       if (cancelled) return;
 
-      if (localUnread.length > 0) {
+      const localLatest = localUnread.find((item) => !dismissed.has(String(item?.id || '')));
+
+      if (localLatest) {
         if (!nudgeReceivedModal) {
-          const latest = localUnread[0];
           setNudgeReceivedModal({
-            id: latest.id,
-            fromName: latest.fromName || 'A friend',
-            message: latest.message || `${latest.fromName || 'A friend'} nudged you to get back to studying.`,
+            id: localLatest.id,
+            fromName: localLatest.fromName || 'A friend',
+            message: localLatest.message || `${localLatest.fromName || 'A friend'} nudged you to get back to studying.`,
             source: 'local',
           });
         }
@@ -904,7 +891,11 @@ export default function Dashboard({ initialActive = "Task" }) {
         return;
       }
 
-          refreshUnreadInboxCount();
+      const latest = unread.find((item) => !dismissed.has(String(item?.id || '')));
+      if (!latest) {
+        return;
+      }
+
       let fromName = 'A friend';
 
       if (latest?.sender_id) {
@@ -1709,7 +1700,7 @@ export default function Dashboard({ initialActive = "Task" }) {
               }}
               style={{ marginTop: '16px' }}
             >
-              Friends
+              Find Friends
             </button>
 
             <h2 className="dashboard-friends-title">My Friends</h2>
