@@ -1340,6 +1340,14 @@ export default function Dashboard({ initialActive = "Overview" }) {
     setElapsedSeconds(0);
   };
 
+  const handleDeleteSession = async (sessionId) => {
+      let { error } = await supabase.from('study_sessions').delete().eq('id', sessionId);
+      if (error) {
+          error = (await supabase.from('sessions').delete().eq('id', sessionId)).error;
+      }
+      if (!error) await refresh();
+  };
+
   const handleAddSubtask = async (e) => {
     e.preventDefault();
     const trimmed = newSubtaskName.trim();
@@ -2387,6 +2395,7 @@ export default function Dashboard({ initialActive = "Overview" }) {
               tasks={tasks}
               selectedTask={selectedTask}
               title="Time Spent"
+              onDeleteSession={handleDeleteSession}
             />
           </aside>
         )}

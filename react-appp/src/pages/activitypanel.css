@@ -240,3 +240,62 @@
 .activity-panel__nudge-btn:hover {
     background: #d69b6f;
 }
+
+.activity-panel__task-session-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.activity-panel__session-delete-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: #b5895a;
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    opacity: 0.6;
+    flex-shrink: 0;
+    transition: opacity 0.12s, background 0.12s;
+}
+.activity-panel__session-delete-btn:hover {
+    opacity: 1;
+    background: #fde8e8;
+    color: #c0392b;
+}
+
+.activity-panel__confirm-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e8ddd4;
+}
+.activity-panel__confirm-text {
+    font-size: 0.78rem;
+    color: #7a5c3a;
+    flex: 1;
+}
+.activity-panel__confirm-btn {
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+}
+.activity-panel__confirm-btn--yes {
+    background: #c0392b;
+    color: #fff;
+}
+.activity-panel__confirm-btn--yes:hover { background: #a93226; }
+.activity-panel__confirm-btn--no {
+    background: #f5efe6;
+    color: #7a5c3a;
+    border: 1px solid #dcc9ae;
+}
+.activity-panel__confirm-btn--no:hover { background: #ede3d8; }
