@@ -1,0 +1,161 @@
+.policy-page {
+    font-family: 'Afacad', sans-serif;
+    background-color: #f8f7f6;
+    color: #746455;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.policy-nav {
+    display: flex;
+    align-items: center;
+    padding: 16px 40px;
+    border-bottom: 1px solid #e0d8d0;
+    position: sticky;
+    top: 0;
+    background-color: #f8f7f6;
+    z-index: 100;
+}
+
+.policy-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #746455;
+}
+
+.policy-nav-icon {
+    width: 36px;
+    height: auto;
+}
+
+.policy-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 40px;
+    flex: 1;
+}
+
+.policy-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #e0d8d0;
+    padding-bottom: 0;
+}
+
+.policy-tab {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #99836F;
+    cursor: pointer;
+    padding: 10px 20px;
+    margin-bottom: -1px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.policy-tab:hover {
+    color: #746455;
+}
+
+.policy-tab.active {
+    color: #746455;
+    border-bottom-color: #99836F;
+}
+
+.policy-content h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #746455;
+    margin-bottom: 8px;
+}
+
+.policy-date {
+    font-size: 0.9rem;
+    color: #99836F;
+    margin-bottom: 40px;
+}
+
+.policy-content section {
+    margin-bottom: 32px;
+}
+
+.policy-content h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #746455;
+    margin-bottom: 10px;
+}
+
+.policy-content p {
+    font-size: 0.95rem;
+    color: #746455;
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+.policy-content ul {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.policy-content ul li {
+    font-size: 0.95rem;
+    color: #746455;
+    line-height: 1.6;
+}
+
+.policy-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 40px;
+    border-top: 1px solid #e0d8d0;
+    font-size: 0.85rem;
+    color: #99836F;
+}
+
+.policy-back {
+    background: none;
+    border: none;
+    color: #99836F;
+    font-family: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.policy-back:hover {
+    text-decoration: underline;
+}
+
+/* UPDATED: center the Privacy & Terms button in the launch footer */
+.launch-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 40px;
+    border-top: 1px solid #e0d8d0;
+    font-size: 0.85rem;
+    color: #99836F;
+    position: relative;
+}
+
+.launch-footer .launch-btn-login {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}

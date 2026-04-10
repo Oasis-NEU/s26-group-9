@@ -65,12 +65,15 @@ function Launch() {
                 </div>
             </section>
 
-            {/* Footer */}
+            {/* Footer - ADD the Privacy & Terms button */}
             <footer className="launch-footer">
                 <div className="launch-footer-logo">
                     <img src="/logo.svg" alt="ProductiviTea" className="launch-nav-icon" />
                     <span>ProductiviTea</span>
                 </div>
+                <button type="button" className="launch-btn-login" onClick={() => navigate('/privacy')}> {/* ADD this */}
+                    Privacy & Terms
+                </button>
                 <p>© 2026 ProductiviTea. Brew responsibly.</p>
             </footer>
 
