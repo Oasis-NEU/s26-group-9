@@ -400,18 +400,48 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
 
   async function handleSendRequest(target) {
     if (!myPublicId) return;
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("friendships")
-      .select("id, status")
+      .select("id, status, user_id, friend_id")
       .or(
         `and(user_id.eq.${myPublicId},friend_id.eq.${target.id}),and(user_id.eq.${target.id},friend_id.eq.${myPublicId})`
       )
       .maybeSingle();
 
+    if (existingError) {
+      console.error("Friend request lookup error:", existingError);
+      setActionMessage(existingError.message || "Could not update request.");
+      return;
+    }
+
     if (existing) {
-      setActionMessage(
-        existing.status === "accepted" ? "Already friends!" : "Request already sent."
-      );
+      if (existing.status === "accepted") {
+        setActionMessage("Already friends!");
+        return;
+      }
+
+      if (existing.status === "pending" && String(existing.user_id) === String(myPublicId)) {
+        const { error: removeError } = await supabase
+          .from("friendships")
+          .delete()
+          .eq("id", existing.id);
+
+        if (removeError) {
+          console.error("Unrequest error:", removeError);
+          setActionMessage(removeError.message || "Could not cancel request.");
+          return;
+        }
+
+        setSentRequests((prev) => {
+          const next = new Set(prev);
+          next.delete(target.id);
+          return next;
+        });
+        setActionMessage(`Canceled request to ${displayName(target)}.`);
+        return;
+      }
+
+      setActionMessage(`${displayName(target)} already sent you a request.`);
       return;
     }
 
@@ -689,7 +719,7 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
                     )}
                   </div>
                   {sentRequests.has(user.id) ? (
-                    <button className="fs-btn fs-btn--sent" disabled>Requested</button>
+                    <button className="fs-btn fs-btn--sent" onClick={() => handleSendRequest(user)}>Requested</button>
                   ) : incomingRequestUserIds.has(user.id) ? (
                     <button className="fs-btn fs-btn--sent" disabled>Pending</button>
                   ) : (
