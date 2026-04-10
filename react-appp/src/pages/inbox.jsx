@@ -31,6 +31,13 @@ function markStoredNudgeRead(userId, notificationId) {
     window.localStorage.setItem(getNudgeStorageKey(userId), JSON.stringify(next));
 }
 
+function removeStoredNudge(userId, notificationId) {
+    if (typeof window === 'undefined' || !userId || !notificationId) return;
+
+    const next = readStoredNudges(userId).filter((item) => item.id !== notificationId);
+    window.localStorage.setItem(getNudgeStorageKey(userId), JSON.stringify(next));
+}
+
 function getTaskReminderStorageKey(userId) {
     return `${TASK_REMINDER_READ_PREFIX}${userId}`;
 }
@@ -510,7 +517,22 @@ export default function Inbox() {
 
     const deleteNotification = async (notification) => {
         if (notification?.type === 'nudge') {
-            await markNudgeAsRead(notification);
+            const { data: authData } = await supabase.auth.getUser();
+            const userId = authData?.user?.id || null;
+
+            if (userId) {
+                removeStoredNudge(userId, notification.id);
+
+                if (notification.source !== 'local') {
+                    await supabase
+                        .from('nudge_notifications')
+                        .delete()
+                        .eq('id', notification.id)
+                        .eq('receiver_id', userId);
+                }
+            }
+
+            setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
             return;
         }
 
