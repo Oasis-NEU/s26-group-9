@@ -1870,6 +1870,7 @@ export default function Dashboard({ initialActive = "Task" }) {
               className="dashboard-add-task-btn"
               onClick={() => {
                 setFriendsTargetId(null);
+                localStorage.removeItem('productivitea:selected-friend');
                 setActive("Friends");
               }}
               style={{ marginTop: '16px' }}
@@ -2333,6 +2334,7 @@ export default function Dashboard({ initialActive = "Task" }) {
 
           {active === "Friends" && (
             <FriendSidebar
+              key={friendsTargetId ?? 'discover'}
               initialSelectedFriendId={friendsTargetId}
               onSelectedFriendChange={handleSelectedFriendChange}
             />
