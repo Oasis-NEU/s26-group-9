@@ -7,6 +7,9 @@
 create extension if not exists pgcrypto;
 
 alter table public.notification_settings
+  add column if not exists deadline_reminders boolean not null default true,
+  add column if not exists nudge_notifications boolean not null default true,
+  add column if not exists friend_request_notifications boolean not null default true,
   add column if not exists email_notifications boolean not null default true,
   add column if not exists sms_notifications boolean not null default false,
   add column if not exists sms_phone text;
@@ -46,22 +49,44 @@ security definer
 set search_path = public
 as $$
 declare
-  prefs record;
+  pref_nudge_notifications boolean := true;
+  pref_email_notifications boolean := true;
+  pref_sms_notifications boolean := false;
+  pref_sms_phone text := null;
+  profile_phone text := null;
+  profile_email text := null;
   delivery_phone text;
 begin
-  select ns.*, u.email, u.phone_number
-  into prefs
-  from public.notification_settings ns
-  left join public.users u on u.id = new.receiver_id
-  where ns.user_id = new.receiver_id;
+  select
+    coalesce(ns.nudge_notifications, true),
+    coalesce(ns.email_notifications, true),
+    coalesce(ns.sms_notifications, false),
+    nullif(trim(ns.sms_phone), ''),
+    nullif(trim(u.phone_number), ''),
+    nullif(trim(u.email), '')
+  into
+    pref_nudge_notifications,
+    pref_email_notifications,
+    pref_sms_notifications,
+    pref_sms_phone,
+    profile_phone,
+    profile_email
+  from public.users u
+  left join public.notification_settings ns on ns.user_id = u.id
+  where u.id = new.receiver_id
+  limit 1;
 
-  if coalesce(prefs.nudge_notifications, true) = false then
+  if not found then
     return new;
   end if;
 
-  delivery_phone := coalesce(nullif(trim(prefs.sms_phone), ''), nullif(trim(prefs.phone_number), ''));
+  if pref_nudge_notifications = false then
+    return new;
+  end if;
 
-  if coalesce(prefs.email_notifications, true) and prefs.email is not null then
+  delivery_phone := coalesce(pref_sms_phone, profile_phone);
+
+  if pref_email_notifications and profile_email is not null then
     insert into public.notification_delivery_queue (
       recipient_user_id,
       channel,
@@ -81,7 +106,7 @@ begin
     );
   end if;
 
-  if coalesce(prefs.sms_notifications, false) and delivery_phone is not null then
+  if pref_sms_notifications and delivery_phone is not null then
     insert into public.notification_delivery_queue (
       recipient_user_id,
       channel,
@@ -119,7 +144,12 @@ security definer
 set search_path = public
 as $$
 declare
-  prefs record;
+  pref_deadline_reminders boolean := true;
+  pref_email_notifications boolean := true;
+  pref_sms_notifications boolean := false;
+  pref_sms_phone text := null;
+  profile_phone text := null;
+  profile_email text := null;
   delivery_phone text;
   due_at timestamptz;
   reminder_at timestamptz;
@@ -142,13 +172,30 @@ begin
     return new;
   end if;
 
-  select ns.*, u.email, u.phone_number
-  into prefs
-  from public.notification_settings ns
-  left join public.users u on u.id = new.user_id
-  where ns.user_id = new.user_id;
+  select
+    coalesce(ns.deadline_reminders, true),
+    coalesce(ns.email_notifications, true),
+    coalesce(ns.sms_notifications, false),
+    nullif(trim(ns.sms_phone), ''),
+    nullif(trim(u.phone_number), ''),
+    nullif(trim(u.email), '')
+  into
+    pref_deadline_reminders,
+    pref_email_notifications,
+    pref_sms_notifications,
+    pref_sms_phone,
+    profile_phone,
+    profile_email
+  from public.users u
+  left join public.notification_settings ns on ns.user_id = u.id
+  where u.id = new.user_id
+  limit 1;
 
-  if coalesce(prefs.deadline_reminders, true) = false then
+  if not found then
+    return new;
+  end if;
+
+  if pref_deadline_reminders = false then
     return new;
   end if;
 
@@ -160,9 +207,9 @@ begin
     return new;
   end if;
 
-  delivery_phone := coalesce(nullif(trim(prefs.sms_phone), ''), nullif(trim(prefs.phone_number), ''));
+  delivery_phone := coalesce(pref_sms_phone, profile_phone);
 
-  if coalesce(prefs.email_notifications, true) and prefs.email is not null then
+  if pref_email_notifications and profile_email is not null then
     insert into public.notification_delivery_queue (
       recipient_user_id,
       channel,
@@ -182,7 +229,7 @@ begin
     );
   end if;
 
-  if coalesce(prefs.sms_notifications, false) and delivery_phone is not null then
+  if pref_sms_notifications and delivery_phone is not null then
     insert into public.notification_delivery_queue (
       recipient_user_id,
       channel,

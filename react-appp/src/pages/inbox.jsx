@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Bell, UserPlus, CheckCircle, Zap, X, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import './inbox.css';
 
 const NUDGE_STORAGE_PREFIX = 'productivitea:nudges:';
+const TASK_REMINDER_READ_PREFIX = 'productivitea:task-reminders-read:';
 
 function getNudgeStorageKey(userId) {
     return `${NUDGE_STORAGE_PREFIX}${userId}`;
@@ -30,33 +31,108 @@ function markStoredNudgeRead(userId, notificationId) {
     window.localStorage.setItem(getNudgeStorageKey(userId), JSON.stringify(next));
 }
 
+function getTaskReminderStorageKey(userId) {
+    return `${TASK_REMINDER_READ_PREFIX}${userId}`;
+}
+
+function readTaskReminderReadMap(userId) {
+    if (typeof window === 'undefined' || !userId) return {};
+
+    try {
+        const rawValue = window.localStorage.getItem(getTaskReminderStorageKey(userId));
+        const parsed = rawValue ? JSON.parse(rawValue) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
+function markTaskReminderRead(userId, reminderId) {
+    if (typeof window === 'undefined' || !userId || !reminderId) return;
+
+    const next = {
+        ...readTaskReminderReadMap(userId),
+        [reminderId]: true,
+    };
+
+    window.localStorage.setItem(getTaskReminderStorageKey(userId), JSON.stringify(next));
+}
+
+function normalizeStatus(value) {
+    return String(value || '').toLowerCase().replace(/[\s_-]+/g, '');
+}
+
+function getDueAtIso(dueDate, dueTime) {
+    const rawDate = String(dueDate || '').trim();
+    if (!rawDate) return null;
+
+    const rawTime = String(dueTime || '09:00:00').trim();
+    const cleanTime = rawTime.length === 5 ? `${rawTime}:00` : rawTime;
+    const parsed = new Date(`${rawDate}T${cleanTime}`);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString();
+}
+
+function toInitials(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '??';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+}
+
+function displayName(user) {
+    const emailHandle = user?.email ? String(user.email).split('@')[0] : '';
+    return user?.full_name || user?.username || user?.name || emailHandle || 'Unknown';
+}
+
 export default function Inbox() {
     const [notifications, setNotifications] = useState([]);
     const [filter, setFilter] = useState('all');
     const [isLoading, setIsLoading] = useState(true);
     const [actionMessage, setActionMessage] = useState('');
+    const [currentUserId, setCurrentUserId] = useState(null);
 
-    async function loadInboxNotifications() {
+    const loadInboxNotifications = useCallback(async () => {
         setIsLoading(true);
 
         const { data: authData } = await supabase.auth.getUser();
         const user = authData?.user || null;
         if (!user) {
+            setCurrentUserId(null);
             setNotifications([]);
             setIsLoading(false);
             return;
         }
 
-        const [friendRequestsResult] = await Promise.all([
+        setCurrentUserId(user.id);
+
+        const [friendRequestsResult, supabaseNudgesResult, tasksResult, settingsResult] = await Promise.all([
             supabase
                 .from('friendships')
                 .select('*')
                 .eq('friend_id', user.id)
                 .eq('status', 'pending')
                 .order('created_at', { ascending: false }),
+            supabase
+                .from('nudge_notifications')
+                .select('id, sender_id, receiver_id, message, created_at, read')
+                .eq('receiver_id', user.id)
+                .order('created_at', { ascending: false }),
+            supabase
+                .from('tasks')
+                .select('id, title, status, due_date, due_time, created_at')
+                .eq('user_id', user.id),
+            supabase
+                .from('notification_settings')
+                .select('deadline_reminders')
+                .eq('user_id', user.id)
+                .maybeSingle(),
         ]);
 
         const [friendshipsData, friendshipsError] = [friendRequestsResult.data, friendRequestsResult.error];
+        const [supabaseNudgesData, supabaseNudgesError] = [supabaseNudgesResult.data, supabaseNudgesResult.error];
+        const [tasksData, tasksError] = [tasksResult.data, tasksResult.error];
+        const [settingsData] = [settingsResult.data];
 
         if (friendshipsError) {
             setActionMessage(friendshipsError.message || 'Could not load friend requests.');
@@ -65,10 +141,34 @@ export default function Inbox() {
             return;
         }
 
+        if (supabaseNudgesError && supabaseNudgesError.code !== '42P01') {
+            setActionMessage(supabaseNudgesError.message || 'Could not load nudges.');
+        }
+
+        if (tasksError && tasksError.code !== '42P01') {
+            setActionMessage(tasksError.message || 'Could not load task reminders.');
+        }
+
         const localNudges = readStoredNudges(user.id);
 
         const pendingRequests = Array.isArray(friendshipsData) ? friendshipsData : [];
-        const nudgeRows = localNudges;
+        const remoteNudges = Array.isArray(supabaseNudgesData) ? supabaseNudgesData : [];
+        const nudgeMap = new Map();
+
+        remoteNudges.forEach((row) => {
+            if (!row?.id) return;
+            nudgeMap.set(String(row.id), { ...row, source: 'supabase' });
+        });
+
+        localNudges.forEach((row) => {
+            if (!row?.id) return;
+            const key = String(row.id);
+            if (!nudgeMap.has(key)) {
+                nudgeMap.set(key, { ...row, source: 'local' });
+            }
+        });
+
+        const nudgeRows = Array.from(nudgeMap.values());
 
         const senderIds = [
             ...pendingRequests.map((request) => request.user_id).filter(Boolean),
@@ -102,6 +202,7 @@ export default function Inbox() {
                 fromInitials: toInitials(name),
                 message: 'sent you a friend request.',
                 timestamp: request.created_at ? new Date(request.created_at).toLocaleString() : 'Just now',
+                createdAt: request.created_at || new Date().toISOString(),
                 senderId: request.user_id,
                 senderProfile: profile,
             };
@@ -119,15 +220,61 @@ export default function Inbox() {
                 from: name,
                 fromInitials: toInitials(name),
                 message: row.message || 'nudged you.',
-                timestamp: row.timestamp ? new Date(row.timestamp).toLocaleString() : 'Just now',
+                timestamp: (row.created_at || row.timestamp)
+                    ? new Date(row.created_at || row.timestamp).toLocaleString()
+                    : 'Just now',
+                createdAt: row.created_at || row.timestamp || new Date().toISOString(),
                 senderId,
                 senderProfile: profile,
+                source: row.source || 'supabase',
             };
         });
 
-        setNotifications([...nudgeNotifications, ...friendRequestNotifications]);
+        const deadlineRemindersEnabled = settingsData?.deadline_reminders !== false;
+        const taskReadMap = readTaskReminderReadMap(user.id);
+        const now = Date.now();
+        const dayMs = 24 * 60 * 60 * 1000;
+
+        const taskNotifications = deadlineRemindersEnabled
+            ? (Array.isArray(tasksData) ? tasksData : [])
+                .map((task) => {
+                    const status = normalizeStatus(task?.status);
+                    if (status === 'completed' || status === 'done') return null;
+
+                    const dueAtIso = getDueAtIso(task?.due_date, task?.due_time);
+                    if (!dueAtIso) return null;
+
+                    const dueAtMs = new Date(dueAtIso).getTime();
+                    const diffMs = dueAtMs - now;
+                    if (diffMs <= 0 || diffMs > dayMs) return null;
+
+                    const reminderId = `task-24h-${task.id}-${dueAtIso}`;
+                    const hoursLeft = Math.max(1, Math.ceil(diffMs / (60 * 60 * 1000)));
+
+                    return {
+                        id: reminderId,
+                        type: 'task_notification',
+                        actionable: false,
+                        read: Boolean(taskReadMap[reminderId]),
+                        from: 'Assignment Reminder',
+                        fromInitials: 'AR',
+                        message: `"${task.title || 'Untitled assignment'}" is due in about ${hoursLeft}h.`,
+                        timestamp: new Date(dueAtIso).toLocaleString(),
+                        createdAt: task.created_at || dueAtIso,
+                        taskId: task.id,
+                        dueAt: dueAtIso,
+                    };
+                })
+                .filter(Boolean)
+            : [];
+
+        const combined = [...nudgeNotifications, ...friendRequestNotifications, ...taskNotifications].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        setNotifications(combined);
         setIsLoading(false);
-    }
+    }, []);
 
     const filteredNotifications = useMemo(
         () => notifications.filter((n) => filter === 'all' || n.type === filter),
@@ -138,7 +285,40 @@ export default function Inbox() {
 
     useEffect(() => {
         loadInboxNotifications();
-    }, []);
+    }, [loadInboxNotifications]);
+
+    useEffect(() => {
+        if (!currentUserId) return undefined;
+
+        const channel = supabase
+            .channel(`inbox-notifications-${currentUserId}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'friendships', filter: `friend_id=eq.${currentUserId}` },
+                () => {
+                    loadInboxNotifications();
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'nudge_notifications', filter: `receiver_id=eq.${currentUserId}` },
+                () => {
+                    loadInboxNotifications();
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${currentUserId}` },
+                () => {
+                    loadInboxNotifications();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [currentUserId, loadInboxNotifications]);
 
     useEffect(() => {
         if (!actionMessage) return;
@@ -147,6 +327,10 @@ export default function Inbox() {
     }, [actionMessage]);
 
     const markAsRead = (id) => {
+        if (currentUserId && String(id || '').startsWith('task-24h-')) {
+            markTaskReminderRead(currentUserId, id);
+        }
+
         setNotifications((prev) =>
             prev.map((n) => (n.id === id ? { ...n, read: true } : n))
         );
@@ -154,13 +338,25 @@ export default function Inbox() {
 
     const markAllAsRead = () => {
         const userNudgeIds = notifications.filter((n) => n.type === 'nudge' && !n.read).map((n) => n.id);
+        const taskReminderIds = notifications
+            .filter((n) => n.type === 'task_notification' && !n.read)
+            .map((n) => n.id);
         if (userNudgeIds.length > 0) {
             const currentUserIdPromise = supabase.auth.getUser().then(({ data }) => data?.user?.id || null);
             currentUserIdPromise.then((userId) => {
                 if (userId) {
                     userNudgeIds.forEach((notificationId) => markStoredNudgeRead(userId, notificationId));
+                    taskReminderIds.forEach((notificationId) => markTaskReminderRead(userId, notificationId));
+                    supabase
+                        .from('nudge_notifications')
+                        .update({ read: true })
+                        .eq('receiver_id', userId)
+                        .in('id', userNudgeIds)
+                        .then(() => {});
                 }
             });
+        } else if (currentUserId && taskReminderIds.length > 0) {
+            taskReminderIds.forEach((notificationId) => markTaskReminderRead(currentUserId, notificationId));
         }
 
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -175,6 +371,13 @@ export default function Inbox() {
         const userId = authData?.user?.id || null;
         if (userId) {
             markStoredNudgeRead(userId, notification.id);
+            if (notification.source !== 'local') {
+                await supabase
+                    .from('nudge_notifications')
+                    .update({ read: true })
+                    .eq('id', notification.id)
+                    .eq('receiver_id', userId);
+            }
         }
 
         setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
@@ -220,6 +423,10 @@ export default function Inbox() {
         if (notification?.type === 'nudge') {
             await markNudgeAsRead(notification);
             return;
+        }
+
+        if (notification?.type === 'task_notification' && currentUserId) {
+            markTaskReminderRead(currentUserId, notification.id);
         }
 
         setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
@@ -309,7 +516,7 @@ export default function Inbox() {
             {/* Notifications List */}
             <div className="inbox-notifications">
                 {isLoading ? (
-                    <div className="inbox-empty">Loading friend requests...</div>
+                    <div className="inbox-empty">Loading notifications...</div>
                 ) : filteredNotifications.length === 0 ? (
                     <div className="inbox-empty">
                         No notifications in this category
@@ -385,6 +592,20 @@ export default function Inbox() {
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     markNudgeAsRead(notification);
+                                                }}
+                                                className="inbox-btn inbox-btn--decline"
+                                            >
+                                                Mark as read
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {notification.type === 'task_notification' && !notification.read && (
+                                        <div className="inbox-actions">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    markAsRead(notification.id);
                                                 }}
                                                 className="inbox-btn inbox-btn--decline"
                                             >

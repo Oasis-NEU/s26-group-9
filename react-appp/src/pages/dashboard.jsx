@@ -65,6 +65,11 @@ function isNetworkFetchError(error) {
   return message.includes('failed to fetch') || message.includes('networkerror') || message.includes('fetch');
 }
 
+function isDeliveryTriggerSchemaError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  return message.includes('record "prefs" has no field') || message.includes('nudge_notifications');
+}
+
 function formatMinutes(value) {
   const mins = Number.parseInt(value, 10);
   if (!Number.isFinite(mins) || mins <= 0) return "0m";
@@ -590,6 +595,11 @@ export default function Dashboard({ initialActive = "Task" }) {
 
         if (error.code === '42501') {
           setFriendActionMessage('Nudge permission blocked by RLS policy. Please update nudge policies.');
+          return;
+        }
+
+        if (isDeliveryTriggerSchemaError(error)) {
+          setFriendActionMessage('External notification trigger is failing. Run supabase/in_app_nudges_only.sql or updated notifications_delivery.sql.');
           return;
         }
 
