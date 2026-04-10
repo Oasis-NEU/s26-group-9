@@ -1858,7 +1858,7 @@ export default function Dashboard({ initialActive = "Task" }) {
               <div className="dashboard-friend-toast">{friendActionMessage}</div>
             )}
             <div className="dashboard-friend-list">
-              {friends.slice(0, 4).map((friend) => (
+              {friends.map((friend) => (
                 <div
                   key={friend.id}
                   className="dashboard-friend-item dashboard-friend-item--clickable"
