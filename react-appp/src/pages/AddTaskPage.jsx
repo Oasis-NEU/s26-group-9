@@ -171,10 +171,15 @@ export default function AddTaskPage({ userId, onRefresh, onTaskCreated }) {
   useEffect(() => {
     const el = descriptionTextareaRef.current;
     if (!el) return;
-    const scrollY = window.scrollY;
+    const scrollContainer = el.closest('.dashboard-content') || el.parentElement;
+    const scrollTop = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight}px`;
-    window.scrollTo(0, scrollY);
+    if (scrollContainer) {
+      scrollContainer.scrollTop = scrollTop;
+    } else {
+      window.scrollTo(0, scrollTop);
+    }
   }, [description]);
 
   // Save draft (skip first render to avoid overwriting loaded draft)
