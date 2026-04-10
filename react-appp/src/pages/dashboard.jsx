@@ -1250,8 +1250,10 @@ export default function Dashboard({ initialActive = "Task" }) {
   useEffect(() => {
     const el = descriptionTextareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
+    requestAnimationFrame(() => {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    });
   }, [descriptionDraft]);
 
   // Timer effect for study sessions
