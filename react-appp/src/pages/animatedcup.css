@@ -19,7 +19,7 @@
 .cloud {
     position: absolute;
     border-radius: 50%;
-    background: rgba(168, 148, 124, 0.10);
+    background: rgba(150, 128, 104, 0.16);
     filter: blur(22px);
     animation: billow 3s ease-in-out infinite;
     opacity: 0;

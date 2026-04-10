@@ -27,6 +27,10 @@ export default function Settings({ onProfileUpdated }) {
     const [deadlineReminders, setDeadlineReminders] = useState(true);
     const [nudgeNotifications, setNudgeNotifications] = useState(true);
     const [friendRequestNotifications, setFriendRequestNotifications] = useState(true);
+    const [emailNotifications, setEmailNotifications] = useState(true);
+    const [smsNotifications, setSmsNotifications] = useState(false);
+    const [smsPhone, setSmsPhone] = useState("");
+    const [isSavingSmsPhone, setIsSavingSmsPhone] = useState(false);
     const [userId, setUserId] = useState(null);
     const [statusMessage, setStatusMessage] = useState("");
     const [statusType, setStatusType] = useState("success");
@@ -44,11 +48,18 @@ export default function Settings({ onProfileUpdated }) {
             setDisplayName(authData.user.user_metadata?.full_name || "Your Name");
             setEmail(authData.user.email || "your@email.com");
 
-            const { data } = await supabase
-                .from('notification_settings')
-                .select('*')
-                .eq('user_id', uid)
-                .maybeSingle();
+            const [{ data }, { data: userRow }] = await Promise.all([
+                supabase
+                    .from('notification_settings')
+                    .select('*')
+                    .eq('user_id', uid)
+                    .maybeSingle(),
+                supabase
+                    .from('users')
+                    .select('phone_number')
+                    .eq('id', uid)
+                    .maybeSingle(),
+            ]);
 
             console.log('loaded notification settings:', data);
 
@@ -56,58 +67,96 @@ export default function Settings({ onProfileUpdated }) {
                 setDeadlineReminders(data.deadline_reminders);
                 setNudgeNotifications(data.nudge_notifications);
                 setFriendRequestNotifications(data.friend_request_notifications);
+                if (typeof data.email_notifications === 'boolean') {
+                    setEmailNotifications(data.email_notifications);
+                }
+                if (typeof data.sms_notifications === 'boolean') {
+                    setSmsNotifications(data.sms_notifications);
+                }
+                setSmsPhone(data.sms_phone || userRow?.phone_number || '');
+            } else {
+                setSmsPhone(userRow?.phone_number || '');
             }
         }
         loadSettings();
     }, []);
 
-    // Save toggle to Supabase when it changes
-    const handleToggleDeadlineReminders = async (val) => {
-        setDeadlineReminders(val);
+    const saveNotificationSettings = async (patch) => {
         const { data: authData } = await supabase.auth.getUser();
-        if (!authData?.user) return;
+        if (!authData?.user) return false;
 
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('notification_settings')
             .upsert({
                 user_id: authData.user.id,
-                deadline_reminders: val,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                ...patch,
             }, { onConflict: 'user_id' });
 
-        console.log('saved:', val, 'data:', data, 'error:', error);
+        if (error) {
+            console.log('notification settings save error:', error);
+            setStatusType('error');
+            setStatusMessage(
+                error.code === '42703'
+                    ? 'Run the notification-delivery SQL migration to add new notification fields.'
+                    : (error.message || 'Could not save notification settings.')
+            );
+            return false;
+        }
+
+        return true;
+    };
+
+    // Save toggle to Supabase when it changes
+    const handleToggleDeadlineReminders = async (val) => {
+        setDeadlineReminders(val);
+        const ok = await saveNotificationSettings({ deadline_reminders: val });
+        if (!ok) setDeadlineReminders(!val);
     };
 
     const handleToggleNudgeNotifications = async (val) => {
         setNudgeNotifications(val);
-        const { data: authData } = await supabase.auth.getUser();
-        if (!authData?.user) return;
-
-        const { data, error } = await supabase
-            .from('notification_settings')
-            .upsert({
-                user_id: authData.user.id,
-                nudge_notifications: val,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id' });
-
-        console.log('saved:', val, 'data:', data, 'error:', error);
+        const ok = await saveNotificationSettings({ nudge_notifications: val });
+        if (!ok) setNudgeNotifications(!val);
     };
 
     const handleToggleFriendRequestNotifications = async (val) => {
         setFriendRequestNotifications(val);
-        const { data: authData } = await supabase.auth.getUser();
-        if (!authData?.user) return;
+        const ok = await saveNotificationSettings({ friend_request_notifications: val });
+        if (!ok) setFriendRequestNotifications(!val);
+    };
 
-        const { data, error } = await supabase
-            .from('notification_settings')
-            .upsert({
-                user_id: authData.user.id,
-                friend_request_notifications: val,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id' });
+    const handleToggleEmailNotifications = async (val) => {
+        setEmailNotifications(val);
+        const ok = await saveNotificationSettings({ email_notifications: val });
+        if (!ok) setEmailNotifications(!val);
+    };
 
-        console.log('saved:', val, 'data:', data, 'error:', error);
+    const handleToggleSmsNotifications = async (val) => {
+        setSmsNotifications(val);
+        const ok = await saveNotificationSettings({ sms_notifications: val });
+        if (!ok) setSmsNotifications(!val);
+    };
+
+    const handleSaveSmsPhone = async () => {
+        const phone = String(smsPhone || '').trim();
+        setIsSavingSmsPhone(true);
+
+        const ok = await saveNotificationSettings({ sms_phone: phone || null });
+        if (!ok) {
+            setIsSavingSmsPhone(false);
+            return;
+        }
+
+        if (userId) {
+            await supabase
+                .from('users')
+                .upsert({ id: userId, phone_number: phone || null }, { onConflict: 'id' });
+        }
+
+        setStatusType('success');
+        setStatusMessage('Notification phone updated.');
+        setIsSavingSmsPhone(false);
     };
 
 
@@ -424,6 +473,59 @@ export default function Settings({ onProfileUpdated }) {
                                 />
                                 <span className="settings-toggle-slider" />
                             </label>
+                        </div>
+
+                        <div className="settings-row">
+                            <div>
+                                <div className="settings-row-label">Email notifications</div>
+                                <div className="settings-row-value">Receive nudges and due reminders by email</div>
+                            </div>
+                            <label className="settings-toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={emailNotifications}
+                                    onChange={e => handleToggleEmailNotifications(e.target.checked)}
+                                />
+                                <span className="settings-toggle-slider" />
+                            </label>
+                        </div>
+
+                        <div className="settings-row">
+                            <div>
+                                <div className="settings-row-label">SMS notifications</div>
+                                <div className="settings-row-value">Receive nudges and due reminders by text message</div>
+                            </div>
+                            <label className="settings-toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={smsNotifications}
+                                    onChange={e => handleToggleSmsNotifications(e.target.checked)}
+                                />
+                                <span className="settings-toggle-slider" />
+                            </label>
+                        </div>
+
+                        <div className="settings-row">
+                            <div>
+                                <div className="settings-row-label">SMS phone</div>
+                                <div className="settings-row-value">Used for text-message notification delivery</div>
+                                <div className="settings-inline-edit">
+                                    <input
+                                        className="settings-input"
+                                        value={smsPhone}
+                                        onChange={e => setSmsPhone(e.target.value)}
+                                        placeholder="+1 555 123 4567"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="settings-save-btn"
+                                        onClick={handleSaveSmsPhone}
+                                        disabled={isSavingSmsPhone}
+                                    >
+                                        {isSavingSmsPhone ? 'Saving...' : 'Save'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="settings-row">
