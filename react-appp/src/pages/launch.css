@@ -1,74 +1,208 @@
-body {
-    background-color: #f8f7f6;
-    font-family: 'Afacad', sans-serif;
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-.launch-container {
+.launch-page {
+    font-family: 'Afacad', sans-serif;
+    background-color: #f8f7f6;
+    color: #746455;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+}
+
+/* Navbar */
+.launch-nav {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    height: 100vh;
-    padding: 20px;
+    padding: 16px 40px;
+    background-color: #f8f7f6;
+    border-bottom: 1px solid #e0d8d0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-.navbar {
-    position: absolute;
-    top: 50%;
-    left: 20px;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-    /* width: 100%;
-    /* align-self: flex-start;
-    margin-right: auto;
-    margin-left: 450px; */
-}
-
-.btn-container {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    display: flex;
-    gap: 10px;
-
-}
-
-.title-section {
+.launch-nav-logo {
     display: flex;
     align-items: center;
     gap: 10px;
-}
-
-h1 {
-    color: #99836F;
-    font-size: 8rem;
-    margin: 0;
-}
-
-p {
+    font-size: 1.1rem;
+    font-weight: 700;
     color: #746455;
 }
 
-.launch-logo {
-    width: 360px;
-    max-width: 70vw;
+.launch-nav-icon {
+    width: 36px;
     height: auto;
-    text-align: left;
-    margin-left: 10px;
 }
 
-.title-logo {
-    text-align: left;
+.launch-nav-brand {
+    font-size: 1.1rem;
+    font-weight: 700;
 }
 
-.productivity-button {
-    position: absolute;
-    top: 1px;
-    left: 5px;
-    z-index: 10;
+.launch-nav-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.launch-btn-login {
+    background: transparent;
+    border: none;
+    color: #746455;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.launch-btn-login:hover {
+    background-color: #f0ebe5;
+}
+
+.launch-btn-signup {
+    background-color: #99836F;
+    border: none;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.launch-btn-signup:hover {
+    background-color: #746455;
+}
+
+/* Hero Section */
+.launch-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 40px;
+    min-height: 100vh;
+    gap: 16px;
+}
+
+.launch-hero-logo {
+    width: 10000px;
+    height: auto;
+    margin-bottom: 8px;
+    opacity: 0.7;
+}
+
+.launch-hero-title {
+    font-size: 6rem;
+    font-weight: 700;
+    color: #746455;
+}
+
+.launch-hero-subtitle {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #746455;
+}
+
+.launch-hero-desc {
+    font-size: 1.5rem;
+    color: #99836F;
+    max-width: 500px;
+}
+
+.launch-btn-cta {
+    margin-top: 16px;
+    background-color: #99836F;
+    border: none;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 18px 48px;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+/* Features Section */
+.launch-features {
+    background-color: #f8f7f6;
+    padding: 80px 40px;
+    text-align: center;
+    border-top: 1px solid #e0d8d0;
+}
+
+.launch-features-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #746455;
+    margin-bottom: 48px;
+}
+
+.launch-features-grid {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+}
+
+.launch-feature-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    max-width: 200px;
+}
+
+.launch-feature-icon {
+    width: 60px;
+    height: 60px;
+    background-color: #f0ebe5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #99836F;
+}
+
+.launch-feature-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #746455;
+}
+
+.launch-feature-card p {
+    font-size: 0.9rem;
+    color: #99836F;
+    text-align: center;
+}
+
+/* Footer */
+.launch-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 40px;
+    border-top: 1px solid #e0d8d0;
+    font-size: 0.85rem;
+    color: #99836F;
+}
+
+.launch-footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #746455;
 }

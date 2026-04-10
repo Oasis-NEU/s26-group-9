@@ -1,94 +1,79 @@
-// Launch page 
-import Button from '@mui/material/Button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { CheckSquare, Flame, Users } from 'lucide-react';
 import './launch.css';
+import AnimatedCup from './animatedcup';
 
 function Launch() {
     const navigate = useNavigate();
-    const handleProductivityClick = async () => {
+
+    const handleGetStarted = async () => {
         const { data, error } = await supabase.auth.getUser();
         const isLoggedIn = !error && !!data?.user;
-        navigate(isLoggedIn ? '/dashboard' : '/login');
+        navigate(isLoggedIn ? '/dashboard' : '/signup');
     };
 
     return (
-        <div className="launch-container">
-            <div className="navbar">
-                <div className="title-section">
-                    <h1 className="title-logo">ProductiviTea!</h1>
-                    <img src="/logo.svg" alt="ProductiviTea Logo" className="launch-logo" />
+        <div className="launch-page">
+
+            {/* Navbar */}
+            <nav className="launch-nav">
+                <div className="launch-nav-logo">
+                    <img src="/logo.svg" alt="ProductiviTea" className="launch-nav-icon" />
+                    <span className="launch-nav-brand">ProductiviTea</span>
                 </div>
-                <Button
-                    className="myButtonLetsGo"
-                    variant="contained"
-                    onClick={handleProductivityClick}
-                    sx={{
-                        padding: '10px 20px',
-                        bgcolor: '#99836F',
-                        '&:hover': {
-                            bgcolor: '#746455',
-                        },
-                        '&:focus': {
-                            outline: 'none',
-                        },
-                        '&.Mui-focusVisible': {
-                            outline: '2px #000000',
-                        },
-                    }}
-                    size="medium"
-                >
-                    Let's go!
-                </Button>
-            </div>
-            <div className="btn-container">
-                <Button className="myButtonLogIn"
-                    variant="contained"
-                    onClick={() => navigate('/login')}
-                    sx={{
-                        padding: '10px 20px',
-                        bgcolor: '#99836F', // Custom background color
-                        '&:hover': {
-                            bgcolor: '#746455', // Custom hover background color
-                        },
-                        '&.Mui-focusVisible': {
-                            outline: '2px solid #000000',
-                        },
-                    }}
-                    size="medium">
-                    Log-in
-                </Button>
-                <Button className="myButtonSignUp"
-                    variant="contained"
-                    onClick={() => navigate('/signup')}
-                    sx={{
-                        padding: '10px 20px',
-                        bgcolor: '#99836F',
-                        '&:hover': {
-                            bgcolor: '#746455',
-                        },
-                        '&:focus': {
-                            outline: 'none',
-                        },
-                        '&.Mui-focusVisible': {
-                            outline: '2px #000000',
-                        },
-                    }} >
-                    Sign-up
-                </Button>
-            </div>
-            <div className="productivity-button">
-                <Button
-                    onClick={() => navigate('/')}
-                    style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
-                >
-                    <img
-                        src="/logo.svg"
-                        alt="descriptive text"
-                        style={{ width: '90px', height: 'auto', display: 'block' }}
-                    />
-                </Button>
-            </div>
+                <div className="launch-nav-buttons">
+                    <button type="button" className="launch-btn-login" onClick={() => navigate('/login')}>
+                        Log In
+                    </button>
+                    <button type="button" className="launch-btn-signup" onClick={() => navigate('/signup')}>
+                        Sign Up
+                    </button>
+                </div>
+            </nav>
+
+            {/* Hero Section */}
+            <section className="launch-hero">
+                <AnimatedCup />
+                <h1 className="launch-hero-title">ProductiviTea</h1>
+                <p className="launch-hero-subtitle">Stay organized, stay accountable</p>
+                <p className="launch-hero-desc">Track tasks, build streaks, and keep each other on track — all in one place.</p>
+                <button type="button" className="launch-btn-cta" onClick={handleGetStarted}>
+                    Get Started Free →
+                </button>
+            </section>
+
+            {/* Features Section */}
+            <section className="launch-features">
+                <h2 className="launch-features-title">Everything in one place</h2>
+                <div className="launch-features-grid">
+                    <div className="launch-feature-card">
+                        <div className="launch-feature-icon"><CheckSquare size={24} /></div>
+                        <h3>Tasks & Deadlines</h3>
+                        <p>Stay organized with everything in one view</p>
+                    </div>
+                    <div className="launch-feature-card">
+                        <div className="launch-feature-icon"><Flame size={24} /></div>
+                        <h3>Build Streaks</h3>
+                        <p>Track consistency and stay motivated</p>
+                    </div>
+                    <div className="launch-feature-card">
+                        <div className="launch-feature-icon"><Users size={24} /></div>
+                        <h3>Friend Accountability</h3>
+                        <p>Keep each other on track together</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="launch-footer">
+                <div className="launch-footer-logo">
+                    <img src="/logo.svg" alt="ProductiviTea" className="launch-nav-icon" />
+                    <span>ProductiviTea</span>
+                </div>
+                <p>© 2026 ProductiviTea. Brew responsibly.</p>
+            </footer>
+
         </div>
     );
 }
