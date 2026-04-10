@@ -204,10 +204,36 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
   const [actionMessage, setActionMessage] = useState("");
   const [sentRequests, setSentRequests] = useState(new Set());
   const [incomingRequestUserIds, setIncomingRequestUserIds] = useState(new Set());
-  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [selectedFriend, setSelectedFriend] = useState(() => {
+    try {
+      const saved = localStorage.getItem('productivitea:selected-friend');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [friendStats, setFriendStats] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const autoOpenedFriendIdRef = useRef("");
+
+  // Re-fetch stats for persisted friend on mount
+  const initialFriendRef = useRef(selectedFriend);
+  useEffect(() => {
+    const friend = initialFriendRef.current;
+    if (!friend) return;
+    const friendId = friend.id || friend.userId;
+    if (!friendId) return;
+
+    setLoadingProfile(true);
+    const tasksPromise = supabase.from("tasks").select("*").eq("user_id", friendId).order("created_at", { ascending: false });
+    Promise.all([tasksPromise, fetchSessionsForFriend(friendId)]).then(([tasksRes, sessionData]) => {
+      setFriendStats({
+        tasks: tasksRes.data || [],
+        sessions: sessionData.map(normSession),
+      });
+      setLoadingProfile(false);
+    });
+  }, []);
 
   useEffect(() => {
     async function init() {
@@ -339,6 +365,7 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
 
   async function openFriendProfile(friend) {
     setSelectedFriend(friend);
+    localStorage.setItem('productivitea:selected-friend', JSON.stringify(friend));
     setFriendStats(null);
     setLoadingProfile(true);
     const friendId = friend.id || friend.userId;
@@ -553,7 +580,7 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
       : [];
     return (
       <div className="fs-page">
-        <button className="fs-back-btn" onClick={() => { setSelectedFriend(null); setFriendStats(null); }}>
+        <button className="fs-back-btn" onClick={() => { setSelectedFriend(null); setFriendStats(null); localStorage.removeItem('productivitea:selected-friend'); }}>
           ← Back to friends
         </button>
 

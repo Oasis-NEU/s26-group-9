@@ -522,7 +522,9 @@ export default function Dashboard({ initialActive = "Task" }) {
     setSearchParams({ tab });
   };
   const { user, tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState(() => {
+    return localStorage.getItem('productivitea:selected-task-id') || null;
+  });
   const middlePanelRef = useRef(null);
   const descriptionTextareaRef = useRef(null);
   const [newSubtaskName, setNewSubtaskName] = useState("");
@@ -1122,6 +1124,14 @@ export default function Dashboard({ initialActive = "Task" }) {
       setSelectedTaskId(tasks[0].id);
     }
   }, [tasks, selectedTaskId]);
+
+  useEffect(() => {
+    if (selectedTaskId) {
+      localStorage.setItem('productivitea:selected-task-id', selectedTaskId);
+    } else {
+      localStorage.removeItem('productivitea:selected-task-id');
+    }
+  }, [selectedTaskId]);
 
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) || null;
   const selectedTaskSubtasks = subtasks.filter((subtask) => {
