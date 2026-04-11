@@ -1531,4 +1531,70 @@
         gap: 12px;
         text-align: center;
     }
+
+    .dashboard-wrapper {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+    }
+
+    .dashboard-page {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 60px);
+        overflow: visible;
+    }
+
+    .dashboard-sidebar {
+        width: 100% !important;
+        border-right: none;
+        border-bottom: 1px solid #8a7664;
+    }
+
+    .dashboard-sidebar.collapsed {
+        width: 100% !important;
+        height: 0;
+        overflow: hidden;
+        border-bottom: none;
+    }
+
+    .dashboard-pull-tab {
+        display: none;
+    }
+
+    .dashboard-content {
+        padding: 16px;
+        min-height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .dashboard-right-sidebar {
+        display: flex !important;
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #D6C7B6;
+        padding: 16px;
+    }
+
+    .dashboard-topbar {
+        padding: 0 12px;
+    }
+
+    .dashboard-topbar-date {
+        display: none;
+    }
+
+    .dashboard-task-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-task-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
 }
+
+
+    
