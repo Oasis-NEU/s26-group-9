@@ -212,3 +212,24 @@
     font-weight: 600;
     color: #746455;
 }
+
+@media (max-width: 768px) {
+    .launch-hero-title {
+        font-size: 2.5rem;
+    }
+
+    .launch-features-grid {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .launch-nav {
+        padding: 12px 20px;
+    }
+
+    .launch-footer {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+}

@@ -513,7 +513,7 @@ function parseTaskTags(task) {
   ));
 }
 
-export default function Dashboard({ initialActive = "Task" }) {
+export default function Dashboard({ initialActive = "Overview" }) {
   // With:
   const [searchParams, setSearchParams] = useSearchParams();
   const active = searchParams.get('tab') || initialActive;
@@ -1358,6 +1358,14 @@ export default function Dashboard({ initialActive = "Task" }) {
     setElapsedSeconds(0);
   };
 
+  const handleDeleteSession = async (sessionId) => {
+      let { error } = await supabase.from('study_sessions').delete().eq('id', sessionId);
+      if (error) {
+          error = (await supabase.from('sessions').delete().eq('id', sessionId)).error;
+      }
+      if (!error) await refresh();
+  };
+
   const handleAddSubtask = async (e) => {
     e.preventDefault();
     const trimmed = newSubtaskName.trim();
@@ -1902,6 +1910,11 @@ export default function Dashboard({ initialActive = "Task" }) {
               )}
             </div>
 
+            <h2 className="dashboard-nav-header">My Friends</h2>
+            {friendActionMessage && (
+              <div className="dashboard-friend-toast">{friendActionMessage}</div>
+            )}
+
             <button
               type="button"
               className="dashboard-add-task-btn"
@@ -1910,15 +1923,11 @@ export default function Dashboard({ initialActive = "Task" }) {
                 localStorage.removeItem('productivitea:selected-friend');
                 setActive("Friends");
               }}
-              style={{ marginTop: '16px' }}
+              style={{ marginTop: '0px' }}
             >
               + Find Friends
             </button>
 
-            <h2 className="dashboard-nav-header">My Friends</h2>
-            {friendActionMessage && (
-              <div className="dashboard-friend-toast">{friendActionMessage}</div>
-            )}
             <div className="dashboard-friend-list">
               {friends.map((friend) => (
                 <div
@@ -2404,6 +2413,7 @@ export default function Dashboard({ initialActive = "Task" }) {
               tasks={tasks}
               selectedTask={selectedTask}
               title="Time Spent"
+              onDeleteSession={handleDeleteSession}
             />
           </aside>
         )}

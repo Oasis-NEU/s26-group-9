@@ -226,10 +226,15 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
 
     setLoadingProfile(true);
     const tasksPromise = supabase.from("tasks").select("*").eq("user_id", friendId).order("created_at", { ascending: false });
-    Promise.all([tasksPromise, fetchSessionsForFriend(friendId)]).then(([tasksRes, sessionData]) => {
+    const friendCountPromise = supabase.from("friendships").select("id", { count: "exact" })
+      .or(`user_id.eq.${friendId},friend_id.eq.${friendId}`)
+      .eq("status", "accepted");
+
+    Promise.all([tasksPromise, fetchSessionsForFriend(friendId), friendCountPromise]).then(([tasksRes, sessionData, friendCountRes]) => {
       setFriendStats({
         tasks: tasksRes.data || [],
         sessions: sessionData.map(normSession),
+        friendCount: friendCountRes.count ?? 0,
       });
       setLoadingProfile(false);
     });
@@ -371,14 +376,20 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
     const friendId = friend.id || friend.userId;
 
     const tasksPromise = supabase.from("tasks").select("*").eq("user_id", friendId).order("created_at", { ascending: false });
-    const [tasksRes, sessionData] = await Promise.all([
+    const friendCountPromise = supabase.from("friendships").select("id", { count: "exact" })
+      .or(`user_id.eq.${friendId},friend_id.eq.${friendId}`)
+      .eq("status", "accepted");
+
+    const [tasksRes, sessionData, friendCountRes] = await Promise.all([
       tasksPromise,
       fetchSessionsForFriend(friendId),
+      friendCountPromise,
     ]);
 
     setFriendStats({
       tasks: tasksRes.data || [],
       sessions: sessionData.map(normSession),
+      friendCount: friendCountRes.count ?? 0,
     });
     setLoadingProfile(false);
   }
@@ -600,6 +611,9 @@ export default function FriendSidebar({ initialSelectedFriendId = null, onSelect
           </div>
 
           <div className="fs-profile-actions">
+            <div className="fs-friend-count-chip">
+              👥 {friendStats?.friendCount ?? 0} friends
+            </div>
             <button
               type="button"
               className="fs-btn fs-btn--remove"
