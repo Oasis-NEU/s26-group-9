@@ -931,6 +931,24 @@ export default function Dashboard({ initialActive = "Overview" }) {
   const closeReceivedNudgeModal = async () => {
     if (nudgeReceivedModal?.id) {
       dismissedNudgeIdsRef.current.add(String(nudgeReceivedModal.id));
+
+      // Mark as read in localStorage
+      const stored = readStoredNudges(user?.id);
+      const updated = stored.map((item) =>
+        String(item.id) === String(nudgeReceivedModal.id) ? { ...item, read: true } : item
+      );
+      if (user?.id) {
+        window.localStorage.setItem(getNudgeStorageKey(user.id), JSON.stringify(updated));
+      }
+
+      // Mark as read in Supabase
+      if (nudgeReceivedModal.source === 'supabase') {
+        await supabase
+          .from('nudge_notifications')
+          .update({ read: true })
+          .eq('id', nudgeReceivedModal.id)
+          .eq('receiver_id', user?.id || '');
+      }
     }
 
     setNudgeReceivedModal(null);

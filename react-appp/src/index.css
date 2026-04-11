@@ -30,6 +30,10 @@ body {
   color: #746455;
 }
 
+body, * {
+  font-family: 'Afacad', sans-serif !important;
+}
+
 html,
 #root {
   min-height: 100%;
