@@ -30,12 +30,12 @@ function writeStoredNotificationSettings(userId, patch) {
     window.localStorage.setItem(getNotificationSettingsStorageKey(userId), JSON.stringify(next));
 }
 
-export default function Settings() {
+export default function Settings({ onProfileUpdated }) {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("Profile");
     const [editingName, setEditingName] = useState(false);
     const [editingEmail, setEditingEmail] = useState(false);
-    const [isSavingName] = useState(false);
+    const [isSavingName, setIsSavingName] = useState(false);
     const [isSavingEmail] = useState(false);
     const [isEditingPassword, setIsEditingPassword] = useState(false);
     const [isSavingPassword, setIsSavingPassword] = useState(false);
@@ -177,7 +177,32 @@ export default function Settings() {
 
 
     const handleEditName = () => { setTempName(displayName); setEditingName(true); };
-    const handleSaveName = () => { setDisplayName(tempName); setEditingName(false); };
+    const handleSaveName = async () => {
+        const trimmed = tempName.trim();
+        if (!trimmed) return;
+
+        setIsSavingName(true);
+        setStatusMessage('');
+
+        const { error } = await supabase.auth.updateUser({
+            data: { full_name: trimmed }
+        });
+
+        if (error) {
+            setStatusType('error');
+            setStatusMessage(error.message || 'Could not update display name.');
+        } else {
+            setDisplayName(trimmed);
+            setEditingName(false);
+            setStatusType('success');
+            setStatusMessage('Display name updated.');
+            if (typeof onProfileUpdated === 'function') {
+                onProfileUpdated({ displayName: trimmed });
+            }
+        }
+
+        setIsSavingName(false);
+    };
     const handleEditEmail = () => { setTempEmail(email); setEditingEmail(true); };
     const handleSaveEmail = () => { setEmail(tempEmail); setEditingEmail(false); };
 
