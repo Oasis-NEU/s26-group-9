@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     Cell,
     Pie,
@@ -71,6 +72,7 @@ export default function ActivityPanel({
     friendName = '',
     friendId = null,
     onNudge = null,
+    onDeleteSession = null,
 }) {
     const fallbackColors = ['#DCC9AE', '#BFA88D', '#8A7664', '#746455'];
     const safeTasks = Array.isArray(tasks) ? tasks : [];
@@ -121,6 +123,7 @@ export default function ActivityPanel({
     });
 
     const streak = computeStreak(safeSessions);
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const timeData = pieData.length > 0 ? pieData : [{ name: 'No data', value: 1, color: '#C8B8A8' }];
 
     if (mode === 'friend') {
@@ -271,20 +274,54 @@ export default function ActivityPanel({
                                 <p className="activity-panel__empty">No sessions logged for {selectedTitle} yet.</p>
                             </article>
                         ) : (
-                            taskSessions.map((session) => (
-                                <article key={session.id || `${session.started_at}-${session.duration_mins}`} className="activity-panel__card activity-panel__card--light">
-                                    <div className="activity-panel__task-session-row">
-                                        <span className="activity-panel__task-session-dot" />
-                                        <div className="activity-panel__task-session-body">
-                                            <div className="activity-panel__task-session-title">{selectedTitle}</div>
-                                            <div className="activity-panel__task-session-meta">
-                                                <span>{formatSessionTimeRange(session.started_at, session.duration_mins)}</span>
-                                                <span>{formatMinutes(session.duration_mins)}</span>
+                            // AFTER
+                            taskSessions.map((session) => {
+                                const sessionKey = session.id || `${session.started_at}-${session.duration_mins}`;
+                                return (
+                                    <article key={sessionKey} className="activity-panel__card activity-panel__card--light">
+                                        <div className="activity-panel__task-session-row">
+                                            <span className="activity-panel__task-session-dot" />
+                                            <div className="activity-panel__task-session-body">
+                                                <div className="activity-panel__task-session-title">{selectedTitle}</div>
+                                                <div className="activity-panel__task-session-meta">
+                                                    <span>{formatSessionTimeRange(session.started_at, session.duration_mins)}</span>
+                                                    <span>{formatMinutes(session.duration_mins)}</span>
+                                                </div>
                                             </div>
+                                            {onDeleteSession && session.id && (
+                                                <button
+                                                    type="button"
+                                                    className="activity-panel__session-delete-btn"
+                                                    onClick={() => setConfirmDeleteId(session.id)}
+                                                    title="Clear session"
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
                                         </div>
-                                    </div>
-                                </article>
-                            ))
+
+                                        {confirmDeleteId === session.id && (
+                                            <div className="activity-panel__confirm-row">
+                                                <span className="activity-panel__confirm-text">Confirm clear log?</span>
+                                                <button
+                                                    type="button"
+                                                    className="activity-panel__confirm-btn activity-panel__confirm-btn--yes"
+                                                    onClick={() => { onDeleteSession(session.id); setConfirmDeleteId(null); }}
+                                                >
+                                                    Yes
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="activity-panel__confirm-btn activity-panel__confirm-btn--no"
+                                                    onClick={() => setConfirmDeleteId(null)}
+                                                >
+                                                    No
+                                                </button>
+                                            </div>
+                                        )}
+                                    </article>
+                                );
+                            })
                         )}
                     </div>
                 </div>

@@ -5,6 +5,7 @@ import './inbox.css';
 
 const NUDGE_STORAGE_PREFIX = 'productivitea:nudges:';
 const TASK_REMINDER_READ_PREFIX = 'productivitea:task-reminders-read:';
+const DISMISSED_NOTIFICATIONS_PREFIX = 'productivitea:dismissed-notifications:';
 
 function getNudgeStorageKey(userId) {
     return `${NUDGE_STORAGE_PREFIX}${userId}`;
@@ -56,6 +57,41 @@ function markTaskReminderRead(userId, reminderId) {
     };
 
     window.localStorage.setItem(getTaskReminderStorageKey(userId), JSON.stringify(next));
+}
+
+function getDismissedNotificationsStorageKey(userId) {
+    return `${DISMISSED_NOTIFICATIONS_PREFIX}${userId}`;
+}
+
+function readDismissedNotificationsMap(userId) {
+    if (typeof window === 'undefined' || !userId) return {};
+
+    try {
+        const rawValue = window.localStorage.getItem(getDismissedNotificationsStorageKey(userId));
+        const parsed = rawValue ? JSON.parse(rawValue) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
+function markNotificationDismissed(userId, notificationId) {
+    if (typeof window === 'undefined' || !userId || !notificationId) return;
+
+    const next = {
+        ...readDismissedNotificationsMap(userId),
+        [notificationId]: true,
+    };
+
+    window.localStorage.setItem(getDismissedNotificationsStorageKey(userId), JSON.stringify(next));
+}
+
+function unmarkNotificationDismissed(userId, notificationId) {
+    if (typeof window === 'undefined' || !userId || !notificationId) return;
+
+    const next = { ...readDismissedNotificationsMap(userId) };
+    delete next[notificationId];
+    window.localStorage.setItem(getDismissedNotificationsStorageKey(userId), JSON.stringify(next));
 }
 
 function normalizeStatus(value) {
@@ -160,6 +196,7 @@ export default function Inbox() {
     const [isLoading, setIsLoading] = useState(true);
     const [actionMessage, setActionMessage] = useState('');
     const [currentUserId, setCurrentUserId] = useState(null);
+    const [undoState, setUndoState] = useState(null);
 
     const loadInboxNotifications = useCallback(async () => {
         setIsLoading(true);
@@ -198,9 +235,17 @@ export default function Inbox() {
                 .maybeSingle(),
         ]);
 
+        let resolvedTasksResult = tasksResult;
+        if (tasksResult.error?.code === '42703' && String(tasksResult.error.message || '').includes('due_time')) {
+            resolvedTasksResult = await supabase
+                .from('tasks')
+                .select('id, title, status, due_date, created_at')
+                .eq('user_id', user.id);
+        }
+
         const [friendshipsData, friendshipsError] = [friendRequestsResult.data, friendRequestsResult.error];
         const [supabaseNudgesData, supabaseNudgesError] = [supabaseNudgesResult.data, supabaseNudgesResult.error];
-        const [tasksData, tasksError] = [tasksResult.data, tasksResult.error];
+        const [tasksData, tasksError] = [resolvedTasksResult.data, resolvedTasksResult.error];
         const [settingsData] = [settingsResult.data];
 
         if (friendshipsError) {
@@ -337,9 +382,13 @@ export default function Inbox() {
                 .filter(Boolean)
             : [];
 
-        const combined = [...nudgeNotifications, ...friendRequestNotifications, ...taskNotifications].sort(
+        const dismissedMap = readDismissedNotificationsMap(user.id);
+
+        const combined = [...nudgeNotifications, ...friendRequestNotifications, ...taskNotifications]
+            .filter((item) => !dismissedMap[item.id])
+            .sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+            );
 
         setNotifications(combined);
         setIsLoading(false);
@@ -353,7 +402,11 @@ export default function Inbox() {
     const unreadCount = notifications.filter((n) => !n.read).length;
 
     useEffect(() => {
-        loadInboxNotifications();
+        const timer = setTimeout(() => {
+            loadInboxNotifications();
+        }, 0);
+
+        return () => clearTimeout(timer);
     }, [loadInboxNotifications]);
 
     useEffect(() => {
@@ -390,10 +443,28 @@ export default function Inbox() {
     }, [currentUserId, loadInboxNotifications]);
 
     useEffect(() => {
+        const intervalId = setInterval(() => {
+            loadInboxNotifications();
+        }, 60 * 1000);
+
+        return () => clearInterval(intervalId);
+    }, [loadInboxNotifications]);
+
+    useEffect(() => {
         if (!actionMessage) return;
         const t = setTimeout(() => setActionMessage(''), 2500);
         return () => clearTimeout(t);
     }, [actionMessage]);
+
+    useEffect(() => {
+        if (!undoState) return undefined;
+
+        const t = setTimeout(() => {
+            setUndoState(null);
+        }, 6000);
+
+        return () => clearTimeout(t);
+    }, [undoState]);
 
     const markAsRead = (id) => {
         if (currentUserId && String(id || '').startsWith('task-24h-')) {
@@ -489,16 +560,41 @@ export default function Inbox() {
     };
 
     const deleteNotification = async (notification) => {
-        if (notification?.type === 'nudge') {
-            await markNudgeAsRead(notification);
-            return;
+        let userId = currentUserId;
+
+        if (!userId) {
+            const { data: authData } = await supabase.auth.getUser();
+            userId = authData?.user?.id || null;
         }
 
-        if (notification?.type === 'task_notification' && currentUserId) {
-            markTaskReminderRead(currentUserId, notification.id);
+        if (userId && notification?.id) {
+            markNotificationDismissed(userId, notification.id);
+            if (notification?.type === 'nudge') {
+                markStoredNudgeRead(userId, notification.id);
+            }
         }
 
         setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+
+        if (userId && notification?.id) {
+            setUndoState({ notification, userId });
+        }
+    };
+
+    const undoDismissNotification = () => {
+        if (!undoState?.notification?.id || !undoState?.userId) return;
+
+        const { notification, userId } = undoState;
+        unmarkNotificationDismissed(userId, notification.id);
+
+        setNotifications((prev) => {
+            const withoutCurrent = prev.filter((n) => n.id !== notification.id);
+            return [...withoutCurrent, notification].sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+        });
+
+        setUndoState(null);
     };
 
     const getIcon = (type) => {
@@ -548,6 +644,18 @@ export default function Inbox() {
 
             {actionMessage && (
                 <p className="inbox-status-message">{actionMessage}</p>
+            )}
+
+            {undoState?.notification && (
+                <div className="inbox-undo-toast" role="status" aria-live="polite">
+                    <span className="inbox-undo-text">Notification dismissed.</span>
+                    <button
+                        onClick={undoDismissNotification}
+                        className="inbox-undo-btn"
+                    >
+                        Undo
+                    </button>
+                </div>
             )}
 
             {/* Filter Tabs */}

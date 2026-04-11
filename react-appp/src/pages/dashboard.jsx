@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Bell, Play, Square, Clock, CheckCircle2, Trash2 } from 'lucide-react';
 import ActivityPanel from "./activitypanel";
 import { Overview } from "./overview";
@@ -10,6 +10,8 @@ import './dashboard.css';
 import { supabase } from '../lib/supabase';
 import Settings from './settings';
 import FriendSidebar from './FriendSidebar';
+
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/preserve-manual-memoization */
 
 const TASK_TAG_OPTIONS = ['School', 'Work', 'Personal', 'Reading', 'Coding'];
 const NUDGE_STORAGE_PREFIX = 'productivitea:nudges:';
@@ -60,6 +62,17 @@ function readTaskReminderReadMap(userId) {
   } catch {
     return {};
   }
+}
+
+function markTaskReminderRead(userId, reminderId) {
+  if (typeof window === 'undefined' || !userId || !reminderId) return;
+
+  const next = {
+    ...readTaskReminderReadMap(userId),
+    [reminderId]: true,
+  };
+
+  window.localStorage.setItem(getTaskReminderStorageKey(userId), JSON.stringify(next));
 }
 
 function normalizeStatusForReminders(value) {
@@ -326,11 +339,6 @@ function formatStatusLabel(status) {
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
 
-function formatPriorityLabel(priority) {
-  const p = priorityKey(priority);
-  return p === 'none' ? 'No priority' : `${p.charAt(0).toUpperCase() + p.slice(1)} priority`;
-}
-
 function toInitials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '??';
@@ -505,11 +513,20 @@ function parseTaskTags(task) {
   ));
 }
 
-export default function Dashboard({ initialActive = "Task" }) {
-  const [active, setActive] = useState(initialActive);
+export default function Dashboard({ initialActive = "Overview" }) {
+  // With:
+  const [searchParams, setSearchParams] = useSearchParams();
+  const active = searchParams.get('tab') || initialActive;
+
+  const setActive = (tab) => {
+    setSearchParams({ tab });
+  };
   const { user, tasks, sessions, activity, friendships, subtasks, isLoading, refresh } = useAppData();
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState(() => {
+    return localStorage.getItem('productivitea:selected-task-id') || null;
+  });
   const middlePanelRef = useRef(null);
+  const descriptionTextareaRef = useRef(null);
   const [newSubtaskName, setNewSubtaskName] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [subtaskMessage, setSubtaskMessage] = useState("");
@@ -541,6 +558,7 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [nudgeSentModal, setNudgeSentModal] = useState(null);
   const [isCancellingNudge, setIsCancellingNudge] = useState(false);
   const [nudgeReceivedModal, setNudgeReceivedModal] = useState(null);
+  const [deadlineReminderModal, setDeadlineReminderModal] = useState(null);
   const [nudgeApiErrorShown, setNudgeApiErrorShown] = useState(false);
   const navigate = useNavigate();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -548,11 +566,27 @@ export default function Dashboard({ initialActive = "Task" }) {
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [optimisticSessions, setOptimisticSessions] = useState([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const dismissedNudgeIdsRef = useRef(new Set());
+  const dismissedDeadlineReminderIdsRef = useRef(new Set());
+  const localNudgeCounterRef = useRef(0);
 
   useEffect(() => {
     dismissedNudgeIdsRef.current = new Set();
+    dismissedDeadlineReminderIdsRef.current = new Set();
+    setDeadlineReminderModal(null);
   }, [user?.id]);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        setSidebarCollapsed(prev => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
 
   const refreshUnreadInboxCount = useCallback(async () => {
     if (!user?.id) {
@@ -574,7 +608,7 @@ export default function Dashboard({ initialActive = "Task" }) {
         .eq('status', 'pending'),
       supabase
         .from('tasks')
-        .select('id, status, due_date, due_time')
+        .select('id, title, status, due_date, due_time')
         .eq('user_id', user.id),
       supabase
         .from('notification_settings')
@@ -583,9 +617,17 @@ export default function Dashboard({ initialActive = "Task" }) {
         .maybeSingle(),
     ]);
 
+    let resolvedTasksResult = tasksResult;
+    if (tasksResult.error?.code === '42703' && String(tasksResult.error.message || '').includes('due_time')) {
+      resolvedTasksResult = await supabase
+        .from('tasks')
+        .select('id, title, status, due_date')
+        .eq('user_id', user.id);
+    }
+
     const remoteNudges = Array.isArray(remoteNudgesResult.data) ? remoteNudgesResult.data : [];
     const pendingFriendRequests = Array.isArray(pendingFriendRequestsResult.data) ? pendingFriendRequestsResult.data : [];
-    const tasksRows = Array.isArray(tasksResult.data) ? tasksResult.data : [];
+    const tasksRows = Array.isArray(resolvedTasksResult.data) ? resolvedTasksResult.data : [];
     const deadlineRemindersEnabled = settingsResult.data?.deadline_reminders !== false;
 
     const nudgeMap = new Map();
@@ -608,23 +650,62 @@ export default function Dashboard({ initialActive = "Task" }) {
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
 
+    const pendingTaskReminders = deadlineRemindersEnabled
+      ? tasksRows
+        .map((task) => {
+          const status = normalizeStatusForReminders(task?.status);
+          if (status === 'completed' || status === 'done') return null;
+
+          const dueAtIso = getDueAtIso(task?.due_date, task?.due_time);
+          if (!dueAtIso) return null;
+
+          const diffMs = new Date(dueAtIso).getTime() - now;
+          if (diffMs <= 0 || diffMs > dayMs) return null;
+
+          const reminderId = `task-24h-${task.id}-${dueAtIso}`;
+          if (taskReadMap[reminderId]) return null;
+
+          return {
+            id: reminderId,
+            taskId: task.id,
+            title: task.title || 'Untitled assignment',
+            dueAtIso,
+            dueAtText: new Date(dueAtIso).toLocaleString(),
+            diffMs,
+            hoursLeft: Math.max(1, Math.ceil(diffMs / (60 * 60 * 1000))),
+          };
+        })
+        .filter(Boolean)
+      : [];
+
     const unreadTaskReminderCount = deadlineRemindersEnabled
-      ? tasksRows.reduce((count, task) => {
-        const status = normalizeStatusForReminders(task?.status);
-        if (status === 'completed' || status === 'done') return count;
-
-        const dueAtIso = getDueAtIso(task?.due_date, task?.due_time);
-        if (!dueAtIso) return count;
-
-        const diffMs = new Date(dueAtIso).getTime() - now;
-        if (diffMs <= 0 || diffMs > dayMs) return count;
-
-        const reminderId = `task-24h-${task.id}-${dueAtIso}`;
-        return taskReadMap[reminderId] ? count : count + 1;
-      }, 0)
+      ? pendingTaskReminders.length
       : 0;
 
     setUnreadNotifications(unreadNudgeCount + pendingFriendRequests.length + unreadTaskReminderCount);
+
+    if (!deadlineRemindersEnabled || pendingTaskReminders.length === 0) {
+      setDeadlineReminderModal(null);
+      return;
+    }
+
+    const nextReminder = pendingTaskReminders
+      .sort((a, b) => a.diffMs - b.diffMs)
+      .find((reminder) => !dismissedDeadlineReminderIdsRef.current.has(String(reminder.id)));
+
+    if (!nextReminder) {
+      return;
+    }
+
+    setDeadlineReminderModal((prev) => {
+      if (prev && prev.id === nextReminder.id) {
+        return prev;
+      }
+      if (prev) {
+        return prev;
+      }
+      return nextReminder;
+    });
   }, [user?.id]);
 
   const acceptedFriendships = useMemo(() => {
@@ -737,7 +818,8 @@ export default function Dashboard({ initialActive = "Task" }) {
     const targetId = String(friendId || '').trim();
     if (!user?.id || !targetId) return;
 
-    const localNotificationId = `local-${Date.now()}`;
+    localNudgeCounterRef.current += 1;
+    const localNotificationId = `local-${user.id}-${targetId}-${localNudgeCounterRef.current}`;
     const supabaseNotificationId =
       typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
         ? crypto.randomUUID()
@@ -852,6 +934,26 @@ export default function Dashboard({ initialActive = "Task" }) {
     }
 
     setNudgeReceivedModal(null);
+    refreshUnreadInboxCount();
+  };
+
+  const closeDeadlineReminderModal = ({ markRead = false, openInbox = false } = {}) => {
+    if (!deadlineReminderModal?.id) {
+      return;
+    }
+
+    dismissedDeadlineReminderIdsRef.current.add(String(deadlineReminderModal.id));
+
+    if (markRead && user?.id) {
+      markTaskReminderRead(user.id, deadlineReminderModal.id);
+    }
+
+    setDeadlineReminderModal(null);
+
+    if (openInbox) {
+      setActive('Inbox');
+    }
+
     refreshUnreadInboxCount();
   };
 
@@ -1001,7 +1103,7 @@ export default function Dashboard({ initialActive = "Task" }) {
       clearInterval(intervalId);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [user?.id, nudgeReceivedModal]);
+  }, [user?.id, nudgeReceivedModal, nudgeApiErrorShown]);
 
   useEffect(() => {
     if (!user?.id) return undefined;
@@ -1035,6 +1137,19 @@ export default function Dashboard({ initialActive = "Task" }) {
     }
   }, [tasks, selectedTaskId]);
 
+  useEffect(() => {
+    if (selectedTaskId) {
+      localStorage.setItem('productivitea:selected-task-id', selectedTaskId);
+    } else {
+      localStorage.removeItem('productivitea:selected-task-id');
+    }
+  }, [selectedTaskId]);
+
+  useEffect(() => {
+    if (active !== 'AddTask') {
+      localStorage.removeItem('productivitea:addtask-draft');
+    }
+  }, [active]);
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) || null;
   const selectedTaskSubtasks = subtasks.filter((subtask) => {
     const relatedTaskId = subtask.task_id ?? subtask.taskId;
@@ -1132,6 +1247,15 @@ export default function Dashboard({ initialActive = "Task" }) {
     return () => clearTimeout(timeoutId);
   }, [subtaskMessage]);
 
+  useEffect(() => {
+    const el = descriptionTextareaRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    });
+  }, [descriptionDraft]);
+
   // Timer effect for study sessions
   useEffect(() => {
     let interval = null;
@@ -1214,6 +1338,14 @@ export default function Dashboard({ initialActive = "Task" }) {
     setIsSessionActive(false);
     setSessionStartTime(null);
     setElapsedSeconds(0);
+  };
+
+  const handleDeleteSession = async (sessionId) => {
+      let { error } = await supabase.from('study_sessions').delete().eq('id', sessionId);
+      if (error) {
+          error = (await supabase.from('sessions').delete().eq('id', sessionId)).error;
+      }
+      if (!error) await refresh();
   };
 
   const handleAddSubtask = async (e) => {
@@ -1713,7 +1845,7 @@ export default function Dashboard({ initialActive = "Task" }) {
       </header>
       <div className="dashboard-page">
 
-        <aside className="dashboard-sidebar">
+        <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <section className="dashboard-task-rail">
             <h2 className="dashboard-nav-header">My Tasks</h2>
             <button type="button" className="dashboard-add-task-btn" onClick={handleAddTask}>
@@ -1760,24 +1892,26 @@ export default function Dashboard({ initialActive = "Task" }) {
               )}
             </div>
 
+            <h2 className="dashboard-nav-header">My Friends</h2>
+            {friendActionMessage && (
+              <div className="dashboard-friend-toast">{friendActionMessage}</div>
+            )}
+
             <button
               type="button"
               className="dashboard-add-task-btn"
               onClick={() => {
                 setFriendsTargetId(null);
+                localStorage.removeItem('productivitea:selected-friend');
                 setActive("Friends");
               }}
-              style={{ marginTop: '16px' }}
+              style={{ marginTop: '0px' }}
             >
-              Find Friends
+              + Find Friends
             </button>
 
-            <h2 className="dashboard-friends-title">My Friends</h2>
-            {friendActionMessage && (
-              <div className="dashboard-friend-toast">{friendActionMessage}</div>
-            )}
             <div className="dashboard-friend-list">
-              {friends.slice(0, 4).map((friend) => (
+              {friends.map((friend) => (
                 <div
                   key={friend.id}
                   className="dashboard-friend-item dashboard-friend-item--clickable"
@@ -1809,6 +1943,17 @@ export default function Dashboard({ initialActive = "Task" }) {
             </div>
           </section>
         </aside>
+
+        <button
+          type="button"
+          className={`dashboard-pull-tab ${sidebarCollapsed ? 'collapsed' : ''}`}
+          onClick={() => setSidebarCollapsed(prev => !prev)}
+          title="toggle sidebar"
+        >
+          <svg viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="8" height="8">
+            <polyline points="5,1 2,4 5,7" />
+          </svg>
+        </button>
 
         <main ref={middlePanelRef} className={`dashboard-content ${active === "Overview" ? "dashboard-content--full" : ""}`}>
           {active === "Overview" && (
@@ -2050,11 +2195,12 @@ export default function Dashboard({ initialActive = "Task" }) {
                   <h3 className="dashboard-task-section-title">Description</h3>
                   <div className="dashboard-task-description-card">
                     <textarea
+                      ref={descriptionTextareaRef}
                       className="dashboard-task-description-input"
                       value={descriptionDraft}
                       onChange={(e) => setDescriptionDraft(e.target.value)}
                       placeholder="Add a description..."
-                      rows={3}
+                      style={{ overflow: 'hidden', resize: 'none' }}
                     />
                     <button
                       type="button"
@@ -2089,7 +2235,7 @@ export default function Dashboard({ initialActive = "Task" }) {
                     {selectedTaskSubtasks.length === 0 ? (
                       <div className="dashboard-task-detail-row">No subtasks yet.</div>
                     ) : (
-                      selectedTaskSubtasks.slice(0, 5).map((subtask) => (
+                      selectedTaskSubtasks.map((subtask) => (
                         <div key={subtask.id} className="dashboard-task-detail-row dashboard-task-detail-row--interactive">
                           <label className="dashboard-subtask-main">
                             <input
@@ -2227,6 +2373,7 @@ export default function Dashboard({ initialActive = "Task" }) {
 
           {active === "Friends" && (
             <FriendSidebar
+              key={friendsTargetId ?? 'discover'}
               initialSelectedFriendId={friendsTargetId}
               onSelectedFriendChange={handleSelectedFriendChange}
             />
@@ -2248,6 +2395,7 @@ export default function Dashboard({ initialActive = "Task" }) {
               tasks={tasks}
               selectedTask={selectedTask}
               title="Time Spent"
+              onDeleteSession={handleDeleteSession}
             />
           </aside>
         )}
@@ -2317,6 +2465,36 @@ export default function Dashboard({ initialActive = "Task" }) {
               >
                 Let's go
               </button>
+            </div>
+          </div>
+        )}
+
+        {deadlineReminderModal && !nudgeReceivedModal && !nudgeSentModal && (
+          <div className="dashboard-nudge-modal-overlay" onClick={() => closeDeadlineReminderModal()}>
+            <div className="dashboard-nudge-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="dashboard-nudge-modal-content">
+                <h2 className="dashboard-nudge-modal-title">Deadline soon</h2>
+                <p className="dashboard-nudge-modal-message">
+                  <strong>{deadlineReminderModal.title}</strong> is due in about {deadlineReminderModal.hoursLeft}h.
+                </p>
+                <p className="dashboard-nudge-modal-subtitle">Due {deadlineReminderModal.dueAtText}</p>
+              </div>
+              <div className="dashboard-nudge-modal-actions">
+                <button
+                  type="button"
+                  className="dashboard-nudge-modal-cancel"
+                  onClick={() => closeDeadlineReminderModal({ markRead: true })}
+                >
+                  Mark as read
+                </button>
+                <button
+                  type="button"
+                  className="dashboard-nudge-modal-close"
+                  onClick={() => closeDeadlineReminderModal({ openInbox: true })}
+                >
+                  Open inbox
+                </button>
+              </div>
             </div>
           </div>
         )}

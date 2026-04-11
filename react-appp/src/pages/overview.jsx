@@ -6,6 +6,13 @@ import { faCheck, faX } from '@fortawesome/free-solid-svg-icons';
 import { supabase } from '../lib/supabase';
 import './overview.css';
 
+const STATUS_OPTIONS = [
+    { value: 'working', label: 'Working', color: '#CD8B5C' },
+    { value: 'break', label: 'On Break', color: '#AC9686' },
+    { value: 'idle', label: 'Idle', color: '#C8B8A8' },
+    { value: 'offline', label: 'Offline', color: '#8B6F5C' },
+];
+
 function normalizeStatus(status) {
     return String(status || '').toLowerCase().replace(/[_\s-]+/g, '');
 }
@@ -186,13 +193,6 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
     const [tempStatus, setTempStatus] = useState('idle');
     const [tempTask, setTempTask] = useState('');
 
-    const statusOptions = [
-        { value: 'working', label: 'Working', color: '#CD8B5C' },
-        { value: 'break', label: 'On Break', color: '#AC9686' },
-        { value: 'idle', label: 'Idle', color: '#C8B8A8' },
-        { value: 'offline', label: 'Offline', color: '#8B6F5C' },
-    ];
-
     const total = safeTasks.length;
     const done = safeTasks.filter((t) => ['completed', 'done'].includes(normalizeStatus(t?.status))).length;
     const inProgress = safeTasks.filter((t) => normalizeStatus(t?.status) === 'inprogress').length;
@@ -225,7 +225,7 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
     const bestFocus = bestFocusWindow(safeSessions);
 
     const getStatusDisplay = () => {
-        const status = statusOptions.find((item) => item.value === currentStatus);
+        const status = STATUS_OPTIONS.find((item) => item.value === currentStatus);
         if (!status) return 'Not set';
         if (currentStatus === 'working' && currentTask) return `${status.label}: ${currentTask}`;
         return status.label;
@@ -253,7 +253,7 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
             const storedStatus = userRow.status || userRow.presence_status || userRow.current_status || null;
             const storedTask = userRow.current_task || userRow.status_task || '';
 
-            if (storedStatus && statusOptions.some((option) => option.value === storedStatus)) {
+            if (storedStatus && STATUS_OPTIONS.some((option) => option.value === storedStatus)) {
                 setCurrentStatus(storedStatus);
                 setTempStatus(storedStatus);
             }
@@ -329,7 +329,7 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
                                     <div className="overview-status-display">
                                         <div
                                             className="overview-status-dot"
-                                            style={{ backgroundColor: statusOptions.find((s) => s.value === currentStatus)?.color || '#C8B8A8' }}
+                                            style={{ backgroundColor: STATUS_OPTIONS.find((s) => s.value === currentStatus)?.color || '#C8B8A8' }}
                                         />
                                         <span>{getStatusDisplay()}</span>
                                     </div>
@@ -337,7 +337,7 @@ export function Overview({ tasks = [], sessions = [], userName = '' }) {
                                     <div className="overview-status-form">
                                         <label>Status</label>
                                         <select value={tempStatus} onChange={(e) => setTempStatus(e.target.value)}>
-                                            {statusOptions.map((option) => (
+                                            {STATUS_OPTIONS.map((option) => (
                                                 <option key={option.value} value={option.value}>{option.label}</option>
                                             ))}
                                         </select>

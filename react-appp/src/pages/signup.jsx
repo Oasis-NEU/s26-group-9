@@ -68,25 +68,51 @@ export default function Signup() {
         const authUserId = signUpData?.user?.id || null;
 
         if (authUserId) {
-            const { error: userUpsertError } = await supabase
-                .from('users')
-                .upsert({
+            // Try richer profile payload first, then fall back to a minimal schema-safe payload.
+            const profilePayloads = [
+                {
                     id: authUserId,
                     email,
                     username,
-                    full_name: fullName || null,
                     first_name: firstName || null,
                     last_name: lastName || null,
                     phone_number: phoneNumber || null,
-                }, { onConflict: 'id' });
+                },
+                {
+                    id: authUserId,
+                    email,
+                    username,
+                },
+            ];
 
-            if (userUpsertError) {
-                setFormError(userUpsertError.message || 'Account created, but profile details could not be saved yet.');
+            let upsertSucceeded = false;
+            let lastUpsertError = null;
+
+            for (const payload of profilePayloads) {
+                const { error: userUpsertError } = await supabase
+                    .from('users')
+                    .upsert(payload, { onConflict: 'id' });
+
+                if (!userUpsertError) {
+                    upsertSucceeded = true;
+                    break;
+                }
+
+                lastUpsertError = userUpsertError;
+                if (userUpsertError.code !== '42703') break;
+            }
+
+            if (!upsertSucceeded && lastUpsertError) {
+                setFormError(lastUpsertError.message || 'Account created, but profile details could not be saved yet.');
             }
         }
 
-        setFormSuccess('Account created. Check your email to verify your account.');
+        setFormSuccess('Account created successfully.');
         event.currentTarget.reset();
+
+        if (signUpData?.session) {
+            navigate('/dashboard');
+        }
     }
 
     return (

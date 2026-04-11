@@ -1,4 +1,4 @@
-import "./AnimatedCup.css";
+import "./animatedcup.css";
 
 export default function AnimatedCup() {
     return (
