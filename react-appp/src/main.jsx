@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import './index.css'
 import App from './App.jsx'
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 class AppErrorBoundary extends Component {
   constructor(props) {
