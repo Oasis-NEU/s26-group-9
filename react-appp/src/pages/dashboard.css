@@ -1596,5 +1596,45 @@
 
 }
 
+.dashboard-hamburger {
+    display: none;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 4px 8px;
+}
 
-    
+.dashboard-mobile-overlay {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .dashboard-hamburger {
+        display: block;
+    }
+
+    .dashboard-mobile-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 50;
+    }
+
+    .dashboard-sidebar {
+        position: fixed !important;
+        top: 60px;
+        left: 0;
+        height: calc(100vh - 60px);
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        width: 260px !important;
+    }
+
+    .dashboard-sidebar:not(.collapsed) {
+        transform: translateX(0);
+    }
+}

@@ -567,6 +567,7 @@ export default function Dashboard({ initialActive = "Overview" }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [optimisticSessions, setOptimisticSessions] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false); 
   const dismissedNudgeIdsRef = useRef(new Set());
   const dismissedDeadlineReminderIdsRef = useRef(new Set());
   const localNudgeCounterRef = useRef(0);
@@ -1827,6 +1828,14 @@ export default function Dashboard({ initialActive = "Overview" }) {
   return (
     <div className="dashboard-wrapper">
       <header className="dashboard-topbar">
+          <button
+        type="button"
+        className="dashboard-hamburger"
+        onClick={() => setMobileSidebarOpen(prev => !prev)}
+        aria-label="Toggle menu"
+    >
+        ☰
+    </button>
         <button
           type="button"
           className="dashboard-home-link"
@@ -1862,8 +1871,14 @@ export default function Dashboard({ initialActive = "Overview" }) {
         </div>
       </header>
       <div className="dashboard-page">
+        {mobileSidebarOpen && (
+        <div
+            className="dashboard-mobile-overlay"
+            onClick={() => setMobileSidebarOpen(false)}
+        />
+    )}
 
-        <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileSidebarOpen ? 'mobile-open' : ''}`}>
           <section className="dashboard-task-rail">
             <h2 className="dashboard-nav-header">My Tasks</h2>
             <button type="button" className="dashboard-add-task-btn" onClick={handleAddTask}>
