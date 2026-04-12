@@ -315,3 +315,49 @@
         text-align: center;
     }
 }
+
+@media (max-width: 768px) {
+    .settings-page {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    .settings-sidebar {
+        width: 100%;
+        min-width: 100%;
+        min-height: auto;
+        height: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: 12px;
+        border-right: none;
+        border-bottom: 1px solid #e0d8d0;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .settings-tabs {
+        display: flex;
+        flex-direction: row;
+        gap: 4px;
+    }
+
+    .settings-tab {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+
+    .settings-logout {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+
+    .settings-content {
+        padding: 20px 16px;
+    }
+
+    .settings-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
