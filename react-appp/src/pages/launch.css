@@ -233,10 +233,12 @@
         gap: 12px;
         text-align: center;
         padding: 20px;
+        position: static;
     }
 
-    .launch-footer .launch-btn-login {
-        position: static;
-        transform: none;
+    .launch-footer > * {
+        position: static !important;
+        transform: none !important;
+        left: auto !important;
     }
 }
