@@ -1545,19 +1545,6 @@
         overflow: visible;
     }
 
-    .dashboard-sidebar {
-        width: 100% !important;
-        border-right: none;
-        border-bottom: 1px solid #8a7664;
-    }
-
-    .dashboard-sidebar.collapsed {
-        width: 100% !important;
-        height: 0;
-        overflow: hidden;
-        border-bottom: none;
-    }
-
     .dashboard-pull-tab {
         display: none;
     }
