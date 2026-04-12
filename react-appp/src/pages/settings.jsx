@@ -54,6 +54,7 @@ export default function Settings({ onProfileUpdated }) {
     const [friendRequestNotifications, setFriendRequestNotifications] = useState(true);
     const [statusMessage, setStatusMessage] = useState("");
     const [statusType, setStatusType] = useState("success");
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
 
@@ -296,6 +297,22 @@ export default function Settings({ onProfileUpdated }) {
         navigate('/', { replace: true });
     };
 
+    const handleLogoutClick = () => setShowLogoutConfirm(true);
+    const handleLogoutConfirm = async () => {
+    setIsLoggingOut(true);
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+        setStatusType("error");
+        setStatusMessage(error.message || "Could not log out. Please try again.");
+        setIsLoggingOut(false);
+        setShowLogoutConfirm(false);
+        return;
+    }
+
+    navigate('/', { replace: true });
+};
+
     return (
         <div className="settings-page">
 
@@ -312,9 +329,28 @@ export default function Settings({ onProfileUpdated }) {
                         </button>
                     ))}
                 </div>
-                <button type="button" className="settings-logout" onClick={handleLogout} disabled={isLoggingOut}>
-                    {isLoggingOut ? 'Logging out...' : 'Log out'}
+                <button type="button" className="settings-logout" onClick={handleLogoutClick} disabled={isLoggingOut}>
+                    Log out
                 </button>
+
+                {showLogoutConfirm && (
+                    <div className="settings-confirm-overlay" onClick={() => setShowLogoutConfirm(false)}>
+                        <div className="settings-confirm-modal" onClick={e => e.stopPropagation()}>
+                            <h4 className="settings-confirm-title">Log out?</h4>
+                            <p className="settings-confirm-text">Are you sure you want to log out?</p>
+                            <div className="settings-confirm-actions">
+                                <button type="button" className="settings-confirm-btn settings-confirm-btn--secondary"
+                                    onClick={() => setShowLogoutConfirm(false)} disabled={isLoggingOut}>
+                                    Cancel
+                                </button>
+                                <button type="button" className="settings-confirm-btn settings-confirm-btn--danger"
+                                    onClick={handleLogoutConfirm} disabled={isLoggingOut}>
+                                    {isLoggingOut ? 'Logging out...' : 'Log out'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </aside>
 
             <div className="settings-content">
