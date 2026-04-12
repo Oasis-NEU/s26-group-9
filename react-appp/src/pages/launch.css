@@ -229,7 +229,14 @@
 
     .launch-footer {
         flex-direction: column;
+        align-items: center;
         gap: 12px;
         text-align: center;
+        padding: 20px;
+    }
+
+    .launch-footer .launch-btn-login {
+        position: static;
+        transform: none;
     }
 }
