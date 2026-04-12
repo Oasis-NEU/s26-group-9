@@ -293,7 +293,7 @@ export default function Settings({ onProfileUpdated }) {
             return;
         }
 
-        navigate('/login', { replace: true });
+        navigate('/', { replace: true });
     };
 
     return (
